@@ -91,26 +91,10 @@ system("ntpdate pool.ntp.org")
 #Firewall rules
 if !network.nil? #Firewall rules are not needed in cloud environments
 
-  #f2k
-  system("firewall-cmd --permanent --zone=public --add-port=2055/udp &>/dev/null")
-
-  #sfacctd (pmacctd)
-  system("firewall-cmd --permanent --zone=public --add-port=6343/udp &>/dev/null")
-
-  #freeradius
-  system("firewall-cmd --permanent --zone=public --add-port=1812/udp &>/dev/null")
-  system("firewall-cmd --permanent --zone=public --add-port=1813/udp &>/dev/null")
-
-  #rb-ale
-  system("firewall-cmd --permanent --zone=public --add-port=7779/tcp &>/dev/null")
-
-  #n2klocd
-  system("firewall-cmd --permanent --zone=public --add-port=2056/tcp &>/dev/null")
-  system("firewall-cmd --permanent --zone=public --add-port=2057/tcp &>/dev/null")
-  system("firewall-cmd --permanent --zone=public --add-port=2058/tcp &>/dev/null")
- 
+  # Add rules here
+  
   # Reload firewalld configuration
-  system("firewall-cmd --reload &>/dev/null")
+  # system("firewall-cmd --reload &>/dev/null")
 
 end
 

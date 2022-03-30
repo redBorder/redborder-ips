@@ -1,0 +1,9 @@
+{
+  "run_list": [ 
+    "role[sensor]",
+    "role[ipscp-sensor]"
+ ],
+  "redBorder": {
+    "force-run-once": true
+  }
+}
