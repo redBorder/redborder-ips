@@ -52,11 +52,12 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 /etc/profile.d/redborder-ips.sh
 /usr/lib/redborder/lib/dhclient-enter-hooks
 %defattr(0644,root,root)
+/etc/chef/
 /etc/redborder
-/usr/lib/systemd/system/rb-init-conf.service
 /usr/lib/redborder/lib/rb_wiz_lib.rb
 /usr/lib/redborder/lib/rb_config_utils.rb
 /usr/lib/redborder/lib/rb_ips_functions.sh
+/usr/lib/systemd/system/rb-init-conf.service
 %doc
 
 %changelog
