@@ -7,6 +7,8 @@ require 'netaddr'
 require 'uri'
 require File.join(ENV['RBDIR'].nil? ? '/usr/lib/redborder' : ENV['RBDIR'],'lib/rb_config_utils.rb')
 
+CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
+
 class WizConf
 
     # Read propierties from sysfs for a network devices
@@ -311,6 +313,196 @@ EOF
 
     end
 
+end
+
+class SegmentsConf < WizConf
+
+    attr_accessor :conf, :cancel
+
+    def initialize
+        @cancel = false
+        @conf = []
+        @confdev = {}
+        @columns = []
+    end
+
+    def doit
+        dialog = MRDialog.new
+        dialog.clear = true
+        dialog.title = "CONFIGURE NETWORK SEGMENTS"
+        loop do
+            text = <<EOF
+
+This is the network segments configuration box.
+
+Please, choose an option to configure the network segments. Once you
+have entered and configured all segments, you must select
+last choise (Finalize) and 'Accept' to continue.
+
+EOF
+            items = []
+            menu_data = Struct.new(:tag, :item)
+            data = menu_data.new
+            # loop over list of net devices
+            #listnetseg = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+            #TODO: build listnetseg
+            init_conf = YAML.load_file(CONFFILE)
+            listnetseg = init_conf["segments"] rescue []
+            text += "Segments: "
+            text += "\n"
+            listnetseg.each do |netseg|
+                #text += write_line(netseg)
+                #text += netseg.keys.map { |k| netseg[k].ljust(@columns[k.to_sym][:width]) }.join(" | ")
+                text += "- #{netseg["name"]} | Ports: #{netseg["ports"]} | Bypass Support: #{netseg["bypass_support"]} "
+            end
+            text += "\n\n\n"
+
+            data.tag = "Force bypass"
+            data.item = "Force bypass auto assign"
+            items.push(data.to_a)
+            data.tag = "New segment"
+            data.item ="Create new segment"
+            items.push(data.to_a)
+            data.tag = "Delete segment"
+            data.item = "Delete existing segment"
+            items.push(data.to_a)
+            data.tag = "Finalize"
+            data.item = "Finalize network device configuration"
+            items.push(data.to_a)
+            height = 0
+            width = 0
+            menu_height = 4
+            selected_item = dialog.menu(text, items, height, width, menu_height)
+
+            if selected_item
+                unless selected_item == "Finalize"
+                    if selected_item == "Force bypass auto assign"
+                        #TODO
+                        break
+                    end
+                    if selected_item == "New segment"
+                        seg = SegConf.new
+                        seg.name = "bpbr" + (listnetseg.count > 0 ? listnetseg.count.to_s : 0.to_s)
+                        seg.doit
+                        #add segment to @confseg
+                    end
+                    if selected_item == "Delete segment"
+                        #TODO
+                        break
+                    end
+                else
+                    break
+                end
+            else
+                # Cancel pressed
+                @cancel = true
+                break
+            end
+        end
+        @confdev.each_key do |interface|
+            @conf << @confdev[interface].merge("device" => interface)
+        end
+    end
+end
+
+# Class to create a Network configuration box
+class SegConf < WizConf
+
+    attr_accessor :name, :conf, :cancel
+
+    def initialize
+        @cancel = false
+        @conf = []
+        @confdev = {}
+        @name = ""
+        @devmode = { "dhcp" => "Dynamic", "static" => "Static" }
+        @devmodereverse = { "Dynamic" => "dhcp", "Static" => "static" }
+    end
+
+    def doit
+        dialog = MRDialog.new
+        dialog.clear = true
+        dialog.title = "CONFIGURE NETWORK"
+        loop do
+            text = <<EOF
+
+This is the new segment configuration box.
+
+Please, select the interfaces of the new segment:
+
+EOF
+            items = []
+            menu_data = Struct.new(:tag, :item)
+            data = menu_data.new
+            # loop over list of net devices
+            listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+            
+            listnetdev.each do |netdev|
+                # loopback and devices with no pci nor mac are not welcome!
+                next if netdev == "lo"
+                netdevprop = netdev_property(netdev)
+                next unless (netdevprop["ID_BUS"] == "pci" and !netdevprop["MAC"].nil?)
+                radiolist_data = Struct.new(:tag, :item, :select)
+                data = radiolist_data.new
+                data.tag = netdev
+                data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                items.push(data.to_a)          
+            
+
+            end
+            dialog.title = "New Network Segmennt"
+            selected_item = dialog.radiolist(text, items)
+            exit_code = dialog.exit_code
+
+            # data.tag = "Add second port"
+            # data.item = "Add a second port to the new segment"
+            # items.push(data.to_a)
+            # data.tag = "Finalize"
+            # data.item = "Finalize network device configuration"
+            # items.push(data.to_a)
+            # height = 0
+            # width = 0
+            # menu_height = 4
+            # selected_item = dialog.menu(text, items, height, width, menu_height)
+
+            if selected_item
+                unless selected_item == "Finalize"
+                    break;
+                    dev = DevConf.new(selected_item)
+                    unless @confdev[selected_item].nil?
+                        dev.conf = {'IP:' => @confdev[selected_item]["ip"],
+                                    'Netmask:' => @confdev[selected_item]["netmask"],
+                                    'Gateway:' => @confdev[selected_item]["gateway"],
+                                    'Mode:' => @devmode[@confdev[selected_item]["mode"]]}
+                    end
+                    dev.doit
+                    unless dev.conf.empty?
+                        @confdev[selected_item] = {}
+                        @confdev[selected_item]["mode"] = @devmodereverse[dev.conf['Mode:']]
+                        if dev.conf['Mode:'] == "Static"
+                            @confdev[selected_item]["ip"] = dev.conf['IP:']
+                            @confdev[selected_item]["netmask"] = dev.conf['Netmask:']
+                            unless dev.conf['Gateway:'].nil? or dev.conf['Gateway:'].empty?
+                                @confdev[selected_item]["gateway"] = dev.conf['Gateway:']
+                            else
+                                @confdev[selected_item]["gateway"] = ""
+                            end
+
+                        end
+                    end
+                else
+                    break
+                end
+            else
+                # Cancel pressed
+                @cancel = true
+                break
+            end
+        end
+        @confdev.each_key do |interface|
+            @conf << @confdev[interface].merge("device" => interface)
+        end
+    end
 end
 
 class CloudAddressConf < WizConf

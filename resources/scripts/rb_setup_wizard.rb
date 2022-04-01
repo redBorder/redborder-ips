@@ -49,8 +49,8 @@ text = <<EOF
 This wizard will guide you through the necessary configuration of the device
 in order to convert it into a redborder node within a redborder cluster.
 
-It will go through the following required steps: network configuration,
-configuration of hostname, domain and DNS, Serf configuration, and finally
+It will go through the following required steps: network configuration, 
+segments configuration, configuration of hostname, domain and DNS, and finally
 the node mode (the mode determines the minimum group of services that make up
 the node, giving it more or less weight within the cluster).
 
@@ -119,6 +119,13 @@ EOF
     end
 end
 
+
+# Conf network segments
+segments_conf = SegmentsConf.new
+segments_conf.doit # launch wizard
+cancel_wizard if segments_conf.cancel
+general_conf["segments"] = segments_conf.conf[:segments]
+
 # Conf for hostname and domain
 cloud_address_conf = CloudAddressConf.new
 cloud_address_conf.doit # launch wizard
@@ -171,7 +178,8 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-command = "#{ENV['RBBIN']}/rb_init_conf"
+###command = "#{ENV['RBBIN']}/rb_init_conf"
+command = "ls -ls"
 
 dialog = MRDialog.new
 dialog.clear = false
