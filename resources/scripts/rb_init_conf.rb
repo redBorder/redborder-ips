@@ -57,7 +57,7 @@ unless network.nil? # network will not be defined in cloud deployments
       #f.puts "SEARCH=#{cdomain}" TODO: check if this is needed.
     }
   end
-
+  segments = [] if segments.nil?
   unless segments.nil?
       files_to_delete = []
       list_net_conf = Dir.entries("/etc/sysconfig/network-scripts/").select {|f| !File.directory? f}
@@ -69,9 +69,6 @@ unless network.nil? # network will not be defined in cloud deployments
           files_to_delete.push(path_to_file)
           # Add to delete the interface that are not part of the bridge
           devs_with_same_bridge = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE=\"#{bridge_name}\"'`.split("\n")
-          devs_with_same_bridge.each do |path_name|
-            files_to_delete.push(path_dev)
-          end
           files_to_delete = files_to_delete + devs_with_same_bridge
         else
           # We need to check if the interfaces are ok
@@ -90,7 +87,7 @@ unless network.nil? # network will not be defined in cloud deployments
       files_to_delete.each do |path_to_file|
         dev_name = path_to_file.split("/").last.tr("ifcg-","")
         system("ip link set dev #{dev_name} down")
-        system("ip link del #{dev_name}") if dev_name.start_with?"ifcfg-b"
+        system("ip link del #{dev_name}") if dev_name.start_with?"b"
 
         puts "Delete file #{path_to_file}"
         File.delete(path_to_file) if File.exist?(path_to_file)
