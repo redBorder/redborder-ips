@@ -59,21 +59,40 @@ unless network.nil? # network will not be defined in cloud deployments
   end
 
   unless segments.nil?
-      # TODO DELETE SEGMENTS
       files_to_delete = []
       list_net_conf = Dir.entries("/etc/sysconfig/network-scripts/").select {|f| !File.directory? f}
       list_net_conf.each do |netconf|
         next unless netconf.start_with?"ifcfg-b"
         path_to_file = "/etc/sysconfig/network-scripts/#{netconf}"
         bridge_name = netconf.tr("ifcfg-","")
-        files_to_delete.push(path_to_file) unless !segments.include?bridge_name
-        # Add to delete those interface part of the bridge we are gonna delete
-        devs_with_same_bridge = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE=#{bridge_name}'`.split("\n")
-        files_to_delete = files_to_delete + dev_with_same_bridge
+        if segments.select{|s| s['name'] == bridge_name}.empty?
+          files_to_delete.push(path_to_file)
+          # Add to delete the interface that are not part of the bridge
+          devs_with_same_bridge = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE=\"#{bridge_name}\"'`.split("\n")
+          devs_with_same_bridge.each do |path_name|
+            files_to_delete.push(path_dev)
+          end
+          files_to_delete = files_to_delete + devs_with_same_bridge
+        else
+          # We need to check if the interfaces are ok
+          devs_with_same_bridge = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE=\"#{bridge_name}\"'`.split("\n")
+          devs_with_same_bridge.each do |path_dev|
+            dev_name = path_dev.split("/").last.tr("ifcg-","")
+            if segments.select{|s| s['name'] == bridge_name and s['ports'].include?dev_name}.empty?
+              files_to_delete.push(path_dev)
+            end
+          end
+        end
       end
       
-      # Delete files
+      
+      # Remove bridges and delete related files
       files_to_delete.each do |path_to_file|
+        dev_name = path_to_file.split("/").last.tr("ifcg-","")
+        system("ip link set dev #{dev_name} down")
+        system("ip link del #{dev_name}") if dev_name.start_with?"ifcfg-b"
+
+        puts "Delete file #{path_to_file}"
         File.delete(path_to_file) if File.exist?(path_to_file)
       end
 
@@ -166,7 +185,7 @@ system('yum install systemd -y')
 ###########################
 if Config_utils.check_cloud_address(cloud_address)
   IPSOPTS="-t ips -i -d -f"
-  system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")
+  #system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")
 else
   p err_msg = "Invalid cloud address. Please review #{INITCONF} file"
   exit 1
