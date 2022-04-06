@@ -8,7 +8,7 @@ require 'uri'
 require File.join(ENV['RBDIR'].nil? ? '/usr/lib/redborder' : ENV['RBDIR'],'lib/rb_config_utils.rb')
 
 CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
-
+LOGFILE  = "/tmp/rb_setup_wizard.log"
 class WizConf
 
     # Read propierties from sysfs for a network devices
@@ -322,8 +322,6 @@ class SegmentsConf < WizConf
     def initialize
         @cancel = false
         @conf = []
-        @confdev = {}
-        @columns = []
         @management_interface = nil
         @segments = []
     end
@@ -331,8 +329,8 @@ class SegmentsConf < WizConf
     def doit
         dialog = MRDialog.new
         dialog.clear = true
-        dialog.title = "CONFIGURE NETWORK SEGMENTS"
-        dialog.logger = Logger.new("/tmp/rb_setup_wizard.log")
+        dialog.title = "CONFIGURE SEGMENTS"
+        dialog.logger = Logger.new(LOGFILE)
         loop do
             text = <<EOF
 
@@ -346,34 +344,27 @@ EOF
             items = []
             menu_data = Struct.new(:tag, :item)
             data = menu_data.new
-            # loop over list of net devices
-            #listnetseg = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
-            #TODO: build listnetseg
-            text += "Segments: "
-            text += "\n"
-            dialog.logger.debug("Showing list of segments..")
-            dialog.logger.debug(@segments)
 
+            text += "Segments: \n"
             @segments.each do |segment|
-                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} "
-                text += "\n"
+                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
             end
-            text += "\n\n\n"
+            text += "\n"
             
             # TODO: force bypass option
             # data.tag = "Force bypass"
             # data.item = "Force bypass auto assign"
             # items.push(data.to_a)
 
-            data.tag = "New segment"
-            data.item ="Create new segment"
+            data.tag  = "New segment"
+            data.item = "Create new segment"
             items.push(data.to_a)
 
-            data.tag = "Delete segment"
+            data.tag  = "Delete segment"
             data.item = "Delete existing segment"
             items.push(data.to_a)
 
-            data.tag = "Finalize"
+            data.tag  = "Finalize"
             data.item = "Finalize network device configuration"
             items.push(data.to_a)
 
@@ -384,146 +375,36 @@ EOF
             exit_code = dialog.exit_code
 
             dialog.logger.debug("Exit code: #{exit_code}")
-            dialog.logger.debug("selected_item: #{selected_item}")
 
-            if selected_item
-                if selected_item == "Finalize"
-                    break
-                elsif selected_item == "Force bypass auto assign"
-                    #TODO
-                    break
-                elsif selected_item == "New segment"
-                    segment = SegConf.new
-                    segment.name = "br" + (segments.count > 0 ? segments.count.to_s : 0.to_s)
-                    segment.segments = segments
-                    segment.management_interface = management_interface
-                    dialog.logger.debug("Calling segment.doit")
-                    segment.doit
-                    unless segment.confseg.empty?
-                        @segments.push(segment.confseg)
-                    end
-                elsif selected_item == "Delete segment"
-                    #Make a dialog with the actual segments
-                    segments_items = []
-                    checklist_data = Struct.new(:tag, :item, :select)
-                    @segments.each do |segment|
-                        data = checklist_data.new
-                        data.tag = segment["name"]
-                        data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]}"
-                        segments_items.push(data.to_a)
-                    end
-                    unless segments_items.empty?
-                        delete_text = <<EOF
-
-This is the delete segment box.
-
-Please, choose the segments that you want to be deleted.
-
-EOF
-
-                        delete_segment_dialog = MRDialog.new
-                        delete_segment_dialog.clear = true
-                        delete_segment_dialog.title = "DELETE SEGMENT"
-                        delete_segment_dialog.logger = Logger.new("/tmp/rb_setup_wizard.log")
-                        segments_to_delete = nil
-                        begin 
-                            segments_to_delete = delete_segment_dialog.checklist(delete_text, segments_items)
-                            delete_segment_exit_code = delete_segment_dialog.exit_code
-                        rescue => e
-                            puts "#{$!}"
-                            t = e.backtrace.join("\n\t")
-                            puts "Error: #{t}"
-                            segments_to_delete = nil
-                            delete_segment_exit_code = 0
-                        end
-                        if segments_to_delete
-                            dialog.logger.debug("Deleting segments.. :")
-                            segments_to_delete.each do |item|
-                                dialog.logger.debug(item)
-                                @segments.delete_if{|s| s["name"] == item}
-                            end
-                            # Reorganice segment names
-                            @segments.each_with_index do |segment, index|
-                                updated_segment = segment
-                                updated_segment["name"] = "br#{index}"
-                                @segments[index] = segment
-                            end
-                        end
-                    end
-                end
-            else
-                # Cancel pressed
-                @cancel = true
+            case selected_item
+            when "Finalize"
                 break
-            end
-        end
-        @conf = @segments
-    end
-end
-
-# Class to create a Network configuration box
-class SegConf < WizConf
-
-    attr_accessor :management_interface, :segments, :confseg, :name, :conf, :cancel
-
-    def initialize
-        @cancel = false
-        @conf = []
-        @confseg = {}
-        @name = ""
-        @devmode = { "dhcp" => "Dynamic", "static" => "Static" }
-        @devmodereverse = { "Dynamic" => "dhcp", "Static" => "static" }
-        @management_interface = nil
-        @segments = []
-    end
-
-    def doit
-        dialog = MRDialog.new
-        dialog.clear = true
-        dialog.title = "CONFIGURE SEGMENT"
-        dialog.logger = Logger.new("/tmp/rb_setup_wizard.log")
-        loop do
-            text = <<EOF
-
-This is the new segment configuration box.
-
-Please, select the interfaces of the new segment:
-
-EOF
-            puts "Execution of SegConf.doit"
-            items = []
-            menu_data = Struct.new(:tag, :item)
-            data = menu_data.new
-            # loop over list of net devices
-            listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
-            
-            listnetdev.each do |netdev|
-                # we skip netdev that is taken by the management interface
-                next if @management_interface and netdev == @management_interface 
-                # we skip the netdev that is already in a segment
-                next if !@segments.select{|segment| segment["ports"].include?netdev}.empty?
-                # loopback and devices with no pci nor mac are not welcome!
-                next if netdev == "lo"
-                netdevprop = netdev_property(netdev)
-                next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
+            when "Force bypass"
+                #TODO
+                break
+            when "New segment"
                 checklist_data = Struct.new(:tag, :item, :select)
-                data = checklist_data.new
-                data.tag = netdev
-                data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
-                items.push(data.to_a)          
-            end
+                
+                checklist_items = []
+                # loop over list of net devices
+                listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+                listnetdev.each do |netdev|
+                    # we skip netdev that is taken by the management interface
+                    next if @management_interface and netdev == @management_interface 
+                    # we skip the netdev that is already in a segment
+                    next if !@segments.select{|segment| segment["ports"].include?netdev}.empty?
+                    # loopback and devices with no pci nor mac are not welcome!
+                    next if netdev == "lo"
+                    netdevprop = netdev_property(netdev)
+                    next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
 
-            exit_code = 0
-            unless items.empty?
-                begin 
-                    selected_item = dialog.checklist(text, items)           
-                    exit_code = dialog.exit_code
-                rescue => e
-                    puts "#{$!}"
-                    t = e.backtrace.join("\n\t")
-                    puts "Error: #{t}"
+                    data = checklist_data.new
+                    data.tag = netdev
+                    data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                    checklist_items.push(data.to_a)          
                 end
-            else
+
+                if checklist_items.empty?
                     dialog_error = MRDialog.new
                     dialog_error.clear = true
                     dialog_error.title = "ERROR in segment configuration"
@@ -534,21 +415,67 @@ No interfaces available.
 Please, delete an actual segment or add more interface to the machine.
 EOF
                     dialog_error.msgbox(text, 10, 41)
-                    selected_item = "Finalize"
-                    exit_code = dialog_error.exit_code
-            end
-            
-            dialog.logger.debug("Exit code: #{exit_code}")
-            if selected_item
-                if selected_item == "Finalize"
-                    break
+                    dialog_error_exit_code = dialog_error.exit_code
                 else
-                    @confseg['name'] = @name
-                    dialog.logger.debug("selected_item: #{selected_item}")
-                    @confseg['ports'] = selected_item.join.split(" ")
-                    @confseg['bypass_support'] = false
-                    dialog.logger.debug("@confseg: #{@confseg}")
-                    break
+                    checklist_dialog = MRDialog.new
+                    checklist_dialog.clear = true
+                    checklist_dialog.title = "NEW SEGMENT"
+                    checklist_dialog.logger = Logger.new(LOGFILE)
+                    checklist_text = <<EOF
+
+This is the new segment configuration box.
+
+Please, select the interfaces of the new segment:
+
+EOF
+
+                    checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
+                    checklist_dialog_exit_code = checklist_dialog.exit_code
+
+                    segment = {}
+                    segment["name"] = "br" + (@segments.count > 0 ? @segments.count.to_s : 0.to_s)
+                    segment["ports"] = checklist_selected_items.join.split(" ")
+                    segment['bypass_support'] = false
+                    @segments.push(segment)
+
+                end
+
+            when "Delete segment"
+                #Make a dialog with the actual segments
+                checklist_data = Struct.new(:tag, :item, :select)
+                checklist_items = []
+                @segments.each do |segment|
+                    data = checklist_data.new
+                    data.tag = segment["name"]
+                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]}"
+                    checklist_items.push(data.to_a)
+                end
+
+                unless checklist_items.empty?
+                    checklist_dialog = MRDialog.new
+                    checklist_dialog.clear = true
+                    checklist_dialog.title = "DELETE SEGMENT"
+                    checklist_dialog.logger = Logger.new(LOGFILE)
+                    checklist_text = <<EOF
+
+This is the delete segment box.
+
+Please, choose the segments that you want to be deleted.
+
+EOF
+                                            
+                    checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
+                    checklist_dialog_exit_code = checklist_dialog.exit_code
+
+                    checklist_selected_items.each do |segment|
+                        @segments.delete_if{|s| s["name"] == segment}
+                    end
+
+                    # Reorganice segment names
+                    @segments.each_with_index do |segment, index|
+                        segment["name"] = "br#{index}"
+                        @segments[index] = segment
+                    end
                 end
             else
                 # Cancel pressed
@@ -556,6 +483,7 @@ EOF
                 break
             end
         end
+        @conf = @segments
     end
 end
 

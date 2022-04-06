@@ -57,6 +57,8 @@ unless network.nil? # network will not be defined in cloud deployments
       #f.puts "SEARCH=#{cdomain}" TODO: check if this is needed.
     }
   end
+
+  # Configure Segments
   segments = [] if segments.nil?
   unless segments.nil?
       files_to_delete = []

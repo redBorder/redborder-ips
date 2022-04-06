@@ -37,7 +37,8 @@ general_conf = {
     "network" => {
         "interfaces" => [],
         "dns" => []
-        }
+        },
+    "segments" => []
     }
 
 # general_conf will dump its contents as yaml conf into rb_init_conf.yml
@@ -47,12 +48,11 @@ general_conf = {
 text = <<EOF
 
 This wizard will guide you through the necessary configuration of the device
-in order to convert it into a redborder node within a redborder cluster.
+in order to convert it into a redborder ips sensor.
 
 It will go through the following required steps: network configuration, 
-segments configuration, configuration of hostname, domain and DNS, and finally
-the node mode (the mode determines the minimum group of services that make up
-the node, giving it more or less weight within the cluster).
+segments configuration, and domain and DNS. After that this process will perform
+a sensor regitration within the redborder manager.
 
 Would you like to continue?
 
@@ -66,6 +66,10 @@ yesno = dialog.yesno(text,0,0)
 unless yesno # yesno is "yes" -> true
     cancel_wizard
 end
+
+##########################
+# NETWORK CONFIGURATION  #
+##########################
 
 text = <<EOF
 
@@ -126,20 +130,18 @@ end
 # Conf network segments
 segments_conf = SegmentsConf.new
 
-if File.exists?(CONFFILE)
-    # Get actual list of segment if any
+# Get segments and management interface from the rb_init_conf.yml if exists
+if File.exists?(CONFFILE)   
     init_conf = YAML.load_file(CONFFILE)
-    segments = init_conf["segments"] rescue [] 
-    segments_conf.segments = segments
-
-    # Get actual managment interface if any
-    if general_conf["network"]["interfaces"].empty? # meaning the user skip network configuration
-        management_interface = init_conf["network"]["interfaces"].first["device"] rescue nil
-    else
-        management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
-    end
-    segments_conf.management_interface = management_interface || nil
+    segments_conf.segments = init_conf["segments"] rescue []
+    segments_conf.management_interface = init_conf["network"]["interfaces"].first["device"] rescue nil
 end
+
+# Get actual managment interface if user just set
+unless general_conf["network"]["interfaces"].empty? # meaning the user did not skip network configuration
+    segments_conf.management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
+end
+
 segments_conf.doit # launch wizard
 cancel_wizard if segments_conf.cancel
 general_conf["segments"] = segments_conf.conf
@@ -153,6 +155,11 @@ cloud_address_conf = CloudAddressConf.new
 cloud_address_conf.doit # launch wizard
 cancel_wizard if cloud_address_conf.cancel
 general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+
+
+###############################
+#     BUILD DESCRIPTION       #
+###############################
 
 # Confirm
 text = <<EOF
@@ -207,8 +214,7 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-###command = "#{ENV['RBBIN']}/rb_init_conf"
-command = "ls -ls"
+command = "#{ENV['RBBIN']}/rb_init_conf"
 
 dialog = MRDialog.new
 dialog.clear = false
