@@ -394,7 +394,7 @@ EOF
                     break
                 elsif selected_item == "New segment"
                     segment = SegConf.new
-                    segment.name = "bpbr" + (segments.count > 0 ? segments.count.to_s : 0.to_s)
+                    segment.name = "br" + (segments.count > 0 ? segments.count.to_s : 0.to_s)
                     segment.segments = segments
                     segment.management_interface = management_interface
                     dialog.logger.debug("Calling segment.doit")
@@ -445,7 +445,7 @@ EOF
                             # Reorganice segment names
                             @segments.each_with_index do |segment, index|
                                 updated_segment = segment
-                                updated_segment["name"] = "bpbr#{index}"
+                                updated_segment["name"] = "br#{index}"
                                 @segments[index] = segment
                             end
                         end

@@ -24,10 +24,17 @@ cloud_address = init_conf['cloud_address']
 
 network = init_conf['network']
 
+segments = init_conf['segments']
+
 # Create file with bash env variables
 open("/etc/redborder/rb_init_conf.conf", "w") { |f|
   f.puts "#REBORDER ENV VARIABLES"
 }
+
+
+####################
+# Set NETWORK      #
+####################
 
 unless network.nil? # network will not be defined in cloud deployments
 
@@ -49,6 +56,58 @@ unless network.nil? # network will not be defined in cloud deployments
       end
       #f.puts "SEARCH=#{cdomain}" TODO: check if this is needed.
     }
+  end
+
+  unless segments.nil?
+      # TODO DELETE SEGMENTS
+      files_to_delete = []
+      list_net_conf = Dir.entries("/etc/sysconfig/network-scripts/").select {|f| !File.directory? f}
+      list_net_conf.each do |netconf|
+        next unless netconf.start_with?"ifcfg-b"
+        path_to_file = "/etc/sysconfig/network-scripts/#{netconf}"
+        bridge_name = netconf.tr("ifcfg-","")
+        files_to_delete.push(path_to_file) unless !segments.include?bridge_name
+        # Add to delete those interface part of the bridge we are gonna delete
+        devs_with_same_bridge = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE=#{bridge_name}'`.split("\n")
+        files_to_delete = files_to_delete + dev_with_same_bridge
+      end
+      
+      # Delete files
+      files_to_delete.each do |path_to_file|
+        File.delete(path_to_file) if File.exist?(path_to_file)
+      end
+
+
+      segments.each do |segment|
+        # Creation of segment file
+        open("/etc/sysconfig/network-scripts/ifcfg-#{segment['name']}", 'w') { |f|
+          f.puts "DEVICE=#{segment['name']}"
+          f.puts "TYPE=Bridge"
+          f.puts "BOTPROTO=none"
+          f.puts "ONBOOT=yes"
+          f.puts "IPV6_AUTOCONF=no"
+          f.puts "IPV6INIT=no"
+          f.puts "DELAY=0"
+          f.puts "STP=off"
+        }
+        # Add each port to the segment
+        segment["ports"].each do |port|
+          open("/etc/sysconfig/network-scripts/ifcfg-#{port}", 'w') { |f|
+            f.puts "DEVICE=\"#{port}\""
+            f.puts "BRIDGE=\"#{segment['name']}\""
+            f.puts "TYPE=Ethernet"
+            # TODO: ADD MAC
+            #f.puts "HWADDR=\"00:e0:ed:29:f0:f1\""
+            f.puts "BOOTPROTO=none"
+            f.puts "NM_CONTROLLED=\"no\""
+            f.puts "ONBOOT=\"yes\""
+            f.puts "IPV6_AUTOCONF=no"
+            f.puts "IPV6INIT=no"
+            f.puts "DELAY=0"
+            f.puts "STP=off"
+          }
+        end
+      end
   end
 
   # Configure NETWORK
@@ -79,6 +138,7 @@ unless network.nil? # network will not be defined in cloud deployments
 end
 
 # TODO: check network connectivity. Try to resolve repo.redborder.com
+
 
 ####################
 # Set UTC timezone #
