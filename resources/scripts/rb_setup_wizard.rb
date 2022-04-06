@@ -119,12 +119,33 @@ EOF
     end
 end
 
+##########################
+# SEGMENTS CONFIGURATION #
+##########################
 
 # Conf network segments
 segments_conf = SegmentsConf.new
+
+# Get actual list of segment if any
+init_conf = YAML.load_file(CONFFILE)
+segments = init_conf["segments"] rescue [] 
+segments_conf.segments = segments
+
+# Get actual managment interface if any
+if general_conf["network"]["interfaces"].empty? # meaning the user skip network configuration
+    management_interface = init_conf["network"]["interfaces"].first["device"] rescue nil
+else
+    management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
+end
+segments_conf.management_interface = management_interface || nil
+
 segments_conf.doit # launch wizard
 cancel_wizard if segments_conf.cancel
-general_conf["segments"] = segments_conf.conf[:segments]
+general_conf["segments"] = segments_conf.conf
+
+###############################
+# CLOUD ADDRESS CONFIGURATION #
+###############################
 
 # Conf for hostname and domain
 cloud_address_conf = CloudAddressConf.new
@@ -159,6 +180,13 @@ unless general_conf["network"]["dns"].nil?
     text += "- DNS:\n"
     general_conf["network"]["dns"].each do |dns|
         text += "    #{dns}\n"
+    end
+end
+
+unless general_conf["segments"].nil?
+    text += "- SEGMENTS:\n"
+    general_conf["segments"].each do |s|
+        text += "    name: #{s["name"]} | ports: #{s["ports"]} | bypass_support: #{s["bypass_support"]}\n"
     end
 end
 
