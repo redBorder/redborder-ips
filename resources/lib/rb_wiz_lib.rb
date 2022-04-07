@@ -7,6 +7,8 @@ require 'netaddr'
 require 'uri'
 require File.join(ENV['RBDIR'].nil? ? '/usr/lib/redborder' : ENV['RBDIR'],'lib/rb_config_utils.rb')
 
+CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
+LOGFILE  = "/tmp/rb_setup_wizard.log"
 class WizConf
 
     # Read propierties from sysfs for a network devices
@@ -311,6 +313,178 @@ EOF
 
     end
 
+end
+
+class SegmentsConf < WizConf
+
+    attr_accessor :segments, :management_interface, :conf, :cancel
+
+    def initialize
+        @cancel = false
+        @conf = []
+        @management_interface = nil
+        @segments = []
+    end
+
+    def doit
+        dialog = MRDialog.new
+        dialog.clear = true
+        dialog.title = "CONFIGURE SEGMENTS"
+        dialog.logger = Logger.new(LOGFILE)
+        loop do
+            text = <<EOF
+
+This is the network segments configuration box.
+
+Please, choose an option to configure the network segments. Once you
+have entered and configured all segments, you must select
+last choise (Finalize) and 'Accept' to continue.
+
+EOF
+            items = []
+            menu_data = Struct.new(:tag, :item)
+            data = menu_data.new
+
+            text += "Segments: \n"
+            @segments.each do |segment|
+                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
+            end
+            text += "\n"
+            
+            # TODO: force bypass option
+            # data.tag = "Force bypass"
+            # data.item = "Force bypass auto assign"
+            # items.push(data.to_a)
+
+            data.tag  = "New segment"
+            data.item = "Create new segment"
+            items.push(data.to_a)
+
+            data.tag  = "Delete segment"
+            data.item = "Delete existing segment"
+            items.push(data.to_a)
+
+            data.tag  = "Finalize"
+            data.item = "Finalize network device configuration"
+            items.push(data.to_a)
+
+            height = 0
+            width = 0
+            menu_height = 4
+            selected_item = dialog.menu(text, items, height, width, menu_height)
+            exit_code = dialog.exit_code
+
+            dialog.logger.debug("Exit code: #{exit_code}")
+
+            case selected_item
+            when "Finalize"
+                break
+            when "Force bypass"
+                #TODO
+                break
+            when "New segment"
+                checklist_data = Struct.new(:tag, :item, :select)
+                
+                checklist_items = []
+                # loop over list of net devices
+                listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+                listnetdev.each do |netdev|
+                    # we skip netdev that is taken by the management interface
+                    next if @management_interface and netdev == @management_interface 
+                    # we skip the netdev that is already in a segment
+                    next if !@segments.select{|segment| segment["ports"].include?netdev}.empty?
+                    # loopback and devices with no pci nor mac are not welcome!
+                    next if netdev == "lo"
+                    netdevprop = netdev_property(netdev)
+                    next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
+
+                    data = checklist_data.new
+                    data.tag = netdev
+                    data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                    checklist_items.push(data.to_a)          
+                end
+
+                if checklist_items.empty?
+                    dialog_error = MRDialog.new
+                    dialog_error.clear = true
+                    dialog_error.title = "ERROR in segment configuration"
+                    text = <<EOF
+    
+No interfaces available.
+    
+Please, delete an actual segment or add more interface to the machine.
+EOF
+                    dialog_error.msgbox(text, 10, 41)
+                    dialog_error_exit_code = dialog_error.exit_code
+                else
+                    checklist_dialog = MRDialog.new
+                    checklist_dialog.clear = true
+                    checklist_dialog.title = "NEW SEGMENT"
+                    checklist_dialog.logger = Logger.new(LOGFILE)
+                    checklist_text = <<EOF
+
+This is the new segment configuration box.
+
+Please, select the interfaces of the new segment:
+
+EOF
+
+                    checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
+                    checklist_dialog_exit_code = checklist_dialog.exit_code
+
+                    segment = {}
+                    segment["name"] = "br" + (@segments.count > 0 ? @segments.count.to_s : 0.to_s)
+                    segment["ports"] = checklist_selected_items.join.split(" ")
+                    segment['bypass_support'] = false
+                    @segments.push(segment)
+
+                end
+
+            when "Delete segment"
+                #Make a dialog with the actual segments
+                checklist_data = Struct.new(:tag, :item, :select)
+                checklist_items = []
+                @segments.each do |segment|
+                    data = checklist_data.new
+                    data.tag = segment["name"]
+                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]}"
+                    checklist_items.push(data.to_a)
+                end
+
+                unless checklist_items.empty?
+                    checklist_dialog = MRDialog.new
+                    checklist_dialog.clear = true
+                    checklist_dialog.title = "DELETE SEGMENT"
+                    checklist_dialog.logger = Logger.new(LOGFILE)
+                    checklist_text = <<EOF
+
+This is the delete segment box.
+
+Please, choose the segments that you want to be deleted.
+
+EOF
+                                            
+                    checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
+                    checklist_dialog_exit_code = checklist_dialog.exit_code
+
+                    checklist_selected_items.each do |segment|
+                        @segments.delete_if{|s| s["name"] == segment}
+                    end
+
+                    # Reorganice segment names
+                    @segments.each_with_index do |segment, index|
+                        segment["name"] = "br#{index}"
+                        @segments[index] = segment
+                    end
+                end
+            else
+                # Cancel pressed
+                @cancel = true
+                break
+            end
+        end
+        @conf = @segments
+    end
 end
 
 class CloudAddressConf < WizConf
