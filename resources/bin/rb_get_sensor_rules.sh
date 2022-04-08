@@ -18,7 +18,7 @@
 source /etc/profile.d/rvm.sh
 source /etc/profile.d/redborder*
 
-PID=$(ps aux |grep /usr/lib/redborder/bin/rb_get_sensor_rules |grep -v grep | grep -v vim | awk '{print $2}')
+PID=$(ps aux |grep /usr/lib/redborder/bin/rb_get_sensor_rules.rb |grep -v grep | grep -v vim | awk '{print $2}')
 
 if [ "x$PID" == "x" ]; then
   if [ "x$*" == "x" ]; then
