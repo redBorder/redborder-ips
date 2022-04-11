@@ -34,7 +34,7 @@ require 'json'
 require "socket"
 require 'chef'
 printf "done\n"
-
+@weburl = "https://webui.service"
 Chef::Config.from_file("/etc/chef/client.rb")
 Chef::Config[:http_retry_count] = 5
 
@@ -49,8 +49,8 @@ printf "------------------------------------------------------------------------
 puts content
 printf "-----------------------------------------------------------------------------------\n"
 
-printf "Contacting #{Chef::Config[:chef_server_url]}#{path} with client name #{client_name}:\n"
-rest   = Chef::REST.new(Chef::Config[:chef_server_url], client_name, Chef::Config[:client_key])
+printf "Contacting #{@weburl}#{path} with client name #{client_name}:\n"
+rest   = Chef::REST.new(@weburl, client_name, Chef::Config[:client_key])
 result = rest.request(:post, "#{path}", {"X-Redborder" => "true"}, {"content" => content, "uuid" => uuid})
 
 if result

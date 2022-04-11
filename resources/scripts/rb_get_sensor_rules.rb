@@ -23,7 +23,7 @@ require 'net/http'
 require "getopt/std"
 require 'fileutils'
 
-
+@weburl = "https://webui.service"
 CLIENTPEM   = "/etc/chef/client.pem"
 QUIET       = 0
 
@@ -112,7 +112,7 @@ def get_rules(remote_name, snortrules, binding_id)
 
   File.delete(snortrulestmp) if File.exist?(snortrulestmp)
 
-  rest   = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+  rest   = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
   result = rest.get_rest("sensors/#{@client_id}/#{remote_name}?group_id=#{@group_id}&binding_id=#{binding_id}", false, {"X-Redborder" => "true"})
 
   if result
@@ -207,7 +207,7 @@ def get_dynamic_rules(dbversion_ids)
 
   dbversion_ids.split(",").each do |dbversion_id|
 
-    rest   = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+    rest   = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
     result = rest.get_rest("/rule_versions/#{dbversion_id}/so_rules_file", false, {"X-Redborder" => "true"})
 
     if result
@@ -248,7 +248,7 @@ def get_gen_msg
 
   dbversion_ids = get_rule_db_version_ids
   dbversion_ids.each do |dbversion_id|
-    rest   = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+    rest   = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
     result = rest.get_rest("/rule_versions/#{dbversion_id}/gen_msg_file", false, {"X-Redborder" => "true"})
     if result
       File.open(GENFILE_TMP, "a") do |file|
@@ -279,7 +279,7 @@ def get_classifications
 
   File.delete "#{@v_classifications}.tmp" if File.exist?("#{@v_classifications}.tmp")
 
-  rest        = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
   result      = rest.get_rest("sensors/#{@client_id}/classifications.txt?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
 
   if result
@@ -304,7 +304,7 @@ def get_classifications
 end
 
 def get_rule_db_version_ids
-  rest        = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
   result      = rest.get_rest("sensors/#{@client_id}/get_rule_db_version_ids?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
   return result
 end
@@ -315,7 +315,7 @@ def get_thresholds(binding_id)
 
   File.delete "#{@v_threshold}.tmp" if File.exist?("#{@v_threshold}.tmp")
 
-  rest        = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
   result      = rest.get_rest("sensors/#{@client_id}/thresholds.txt?group_id=#{@group_id}&binding_id=#{binding_id}", false, {"X-Redborder" => "true"})
 
   if result
@@ -346,7 +346,7 @@ def get_unicode_map
 
   File.delete "#{@v_unicode_map}.tmp" if File.exist?("#{@v_unicode_map}.tmp")
 
-  rest        = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
   result      = rest.get_rest("sensors/#{@client_id}/unicode_map.txt?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
 
   if result
@@ -381,7 +381,7 @@ def get_iplist_files
 
   File.delete "#{@v_iplist}.tmp" if File.exist?("#{@v_iplist}.tmp")
 
-  rest        = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
+  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
   result      = rest.get_rest("sensors/#{@client_id}/iplist.txt?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
 
   if result
@@ -477,20 +477,20 @@ def copy_backup( backup_dir, datestr, temp_file_path, final_file_path, filename,
   end
 end
 
-File.open("/etc/rb_sysconf.conf", "r").each do |line|
-  var = /^(\w+)\s*=\s*\"?(.*?)\"?\s*$/.match(line)
-  instance_variable_set("@#{var[1]}", var[2])
-end
-
-if @sys_hostname.empty?
-  puts "Hostname is not configured!"
-  exit
-end
-
-if @dns_domain.empty?
-  puts "Domain is not configured!"
-  exit
-end
+#File.open("/etc/rb_sysconf.conf", "r").each do |line|
+#  var = /^(\w+)\s*=\s*\"?(.*?)\"?\s*$/.match(line)
+#  instance_variable_set("@#{var[1]}", var[2])
+#end
+#
+#if @sys_hostname.empty?
+#  puts "Hostname is not configured!"
+#  exit
+#end
+#
+#if @dns_domain.empty?
+#  puts "Domain is not configured!"
+#  exit
+#end
 
 if !File.exists?(CLIENTPEM)
   puts "The sensor is not registered!"
