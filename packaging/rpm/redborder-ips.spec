@@ -8,7 +8,7 @@ License: AGPL 3.0
 URL: https://github.com/redBorder/redborder-ips
 Source0: %{name}-%{version}.tar.gz
 
-Requires: bash ntp dialog dmidecode rsync nc telnet redborder-common redborder-chef-client redborder-rubyrvm redborder-cli rb-register bridge-utils pfring-dkms net-tools bind-utils kernel-devel-uname-r
+Requires: bash ntp dialog dmidecode rsync nc telnet redborder-common redborder-chef-client redborder-rubyrvm redborder-cli rb-register bridge-utils pfring-dkms net-tools bind-utils
 
 %description
 %{summary}
@@ -43,7 +43,7 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 %pre
 
 %post
-#yum install kernel-devel-uname-r == $(uname -r) -y
+yum install "kernel-devel-uname-r == $(uname -r)" -y
 [ -f /usr/lib/redborder/bin/rb_rubywrapper.sh ] && /usr/lib/redborder/bin/rb_rubywrapper.sh -c
 systemctl daemon-reload
 systemctl enable pf_ring && systemctl start pf_ring
