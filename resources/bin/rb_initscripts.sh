@@ -715,7 +715,7 @@ f_clean() {
         instances_group_list[${instances_group}]="down"
     done
 
-    for config_group_file in $(ls ${RBDIR}/etc/sysconfig/${prog}-* | grep "${prog}-[0-9][0-9]*$" | sort); do
+    for config_group_file in $(ls /etc/sysconfig/${prog}-* | grep "${prog}-[0-9][0-9]*$" | sort); do
         instances_group=$(f_get_config_value "${config_group_file}" 'INSTANCES_GROUP')
         [ "x${INSTANCES_GROUP}" == "x" ] && instances_group="$(echo ${config_group_file} | sed 's/.*-\([0-9]*\)$/\1/')"
         instances_group_list[${instances_group}]="up"
@@ -743,7 +743,7 @@ f_clean() {
             instance=$(f_get_pid_value ${pid} 'INSTANCE')
             bindcpu=$(f_get_pid_value ${pid} 'BIND_CPU')
 
-            config_group_file="${RBDIR}/etc/sysconfig/${prog}-${instances_group}"
+            config_group_file="/etc/sysconfig/${prog}-${instances_group}"
             
             if [ -f $config_group_file ]; then
                 config_cpu_list=( $(f_get_config_value "${config_group_file}" 'CPU_LIST' | tr ',' ' ' ) )
@@ -893,12 +893,12 @@ f_start() {
     local instances_group_name=$1
     RETVAL=0
 
-    ls ${RBDIR}/etc/sysconfig/${prog}-* 2>/dev/null | grep -q "${prog}-[0-9][0-9]*$"
+    ls /etc/sysconfig/${prog}-* 2>/dev/null | grep -q "${prog}-[0-9][0-9]*$"
     if [ $? -ne 0 ]; then
         # There is no config group file ... exiting
         return 1
     elif [ "x${instances_group_name}" != "x" ]; then
-        for config_group_file in $(ls ${RBDIR}/etc/sysconfig/${prog}-* | grep "${prog}-[0-9][0-9]*$" | sort); do
+        for config_group_file in $(ls /etc/sysconfig/${prog}-* | grep "${prog}-[0-9][0-9]*$" | sort); do
             cat ${config_group_file} | grep "^INSTANCES_GROUP_NAME" | grep -q "${instances_group_name}"
             if [ $? -eq 0 ]; then
                 # found!
@@ -910,7 +910,7 @@ f_start() {
         done
     else
         # loop over config group files
-        for config_group_file in $(ls ${RBDIR}/etc/sysconfig/${prog}-* | grep "${prog}-[0-9][0-9]*$" | sort); do
+        for config_group_file in $(ls /etc/sysconfig/${prog}-* | grep "${prog}-[0-9][0-9]*$" | sort); do
             instances_group=$(f_get_config_value "${config_group_file}" 'INSTANCES_GROUP')
             [ "x${instances_group}" == "x" ] && instances_group="$(echo ${config_group_file} | sed 's/.*-\([0-9]*\)$/\1/')"
             f_start_group ${instances_group}

@@ -31,6 +31,7 @@ install -D -m 0644 resources/dialogrc %{buildroot}/etc/redborder
 cp resources/bin/* %{buildroot}/usr/lib/redborder/bin
 cp resources/scripts/* %{buildroot}/usr/lib/redborder/scripts
 cp -r resources/etc/chef %{buildroot}/etc/
+cp resources/etc/rb_sysconf.conf.default %{buildroot}/etc/
 chmod 0755 %{buildroot}/usr/lib/redborder/bin/*
 chmod 0755 %{buildroot}/usr/lib/redborder/scripts/*
 install -D -m 0644 resources/lib/rb_wiz_lib.rb %{buildroot}/usr/lib/redborder/lib
@@ -42,6 +43,7 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 %pre
 
 %post
+[ -f /etc/rb_sysconf.conf.default -a ! -f /etc/rb_sysconf.conf ] && cp /etc/rb_sysconf.conf.default /etc/rb_sysconf.conf
 /usr/lib/redborder/bin/rb_rubywrapper.sh -c
 
 %files
@@ -53,6 +55,7 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 /usr/lib/redborder/lib/dhclient-enter-hooks
 %defattr(0644,root,root)
 /etc/chef/
+/etc/rb_sysconf.conf.default
 /etc/redborder
 /usr/lib/redborder/lib/rb_wiz_lib.rb
 /usr/lib/redborder/lib/rb_config_utils.rb
