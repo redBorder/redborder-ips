@@ -44,7 +44,7 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 
 %post
 yum install kernel-devel-uname-r == $(uname -r) -y
-[ -f rb_rubywrapper.sh ] && /usr/lib/redborder/bin/rb_rubywrapper.sh -c
+[ -f /usr/lib/redborder/bin/rb_rubywrapper.sh ] && /usr/lib/redborder/bin/rb_rubywrapper.sh -c
 systemctl daemon-reload
 systemctl enable pf_ring && systemctl start pf_ring
 [ -f /etc/rb_sysconf.conf.default -a ! -f /etc/rb_sysconf.conf ] && cp /etc/rb_sysconf.conf.default /etc/rb_sysconf.conf
