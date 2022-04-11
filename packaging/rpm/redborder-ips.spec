@@ -8,7 +8,7 @@ License: AGPL 3.0
 URL: https://github.com/redBorder/redborder-ips
 Source0: %{name}-%{version}.tar.gz
 
-Requires: bash ntp dialog dmidecode rsync nc telnet redborder-common redborder-chef-client redborder-rubyrvm redborder-cli rb-register  bridge-utils
+Requires: bash ntp dialog dmidecode rsync nc telnet redborder-common redborder-chef-client redborder-rubyrvm redborder-cli rb-register bridge-utils pfring-dkms net-tools bind-utils
 
 %description
 %{summary}
@@ -43,8 +43,11 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 %pre
 
 %post
+yum install kernel-devel-uname-r == $(uname -r) -y
+[ -f rb_rubywrapper.sh ] && /usr/lib/redborder/bin/rb_rubywrapper.sh -c
+systemctl daemon-reload
+systemctl enable pf_ring && systemctl start pf_ring
 [ -f /etc/rb_sysconf.conf.default -a ! -f /etc/rb_sysconf.conf ] && cp /etc/rb_sysconf.conf.default /etc/rb_sysconf.conf
-/usr/lib/redborder/bin/rb_rubywrapper.sh -c
 
 %files
 %defattr(0755,root,root)
