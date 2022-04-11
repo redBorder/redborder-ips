@@ -94,12 +94,12 @@ for conf in $*; do
     mkdir -p $dir
       if [ $ret -eq 0 ]; then
         echo -n "  - checking Snort configuration (span mode)   "
-        nice -n 19 ionice -c2 -n7 env INSTANCES_GROUP=$RAND /usr/bin/snort -T -c $conf -l $dir --perfmon-file $dir/snort.stats -G 0 &>$dir/snort-out.log 
+        nice -n 19 ionice -c2 -n7 env INSTANCES_GROUP=$RAND /usr/sbin/snort -T -c $conf -l $dir --perfmon-file $dir/snort.stats -G 0 &>$dir/snort-out.log 
         ret=$?
         if [ $ret -eq 0 ]; then
           e_ok
           echo -n "  - checking Snort configuration (inline mode) "
-          nice -n 19 ionice -c2 -n7 env INSTANCES_GROUP=$RAND /usr/bin/snort -T -c $conf -l $dir --perfmon-file $dir/snort.stats -Q -G 0 &>$dir/snort-out.log
+          nice -n 19 ionice -c2 -n7 env INSTANCES_GROUP=$RAND /usr/sbin/snort -T -c $conf -l $dir --perfmon-file $dir/snort.stats -Q -G 0 &>$dir/snort-out.log
           ret=$?
           if [ $ret -eq 0 ]; then
             e_ok
