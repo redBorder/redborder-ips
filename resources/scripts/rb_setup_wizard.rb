@@ -139,7 +139,8 @@ end
 
 # Get actual managment interface if user just set
 unless general_conf["network"]["interfaces"].empty? # meaning the user did not skip network configuration
-    segments_conf.management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
+    # TODO: find a way to detect the managment interface in case of DHCP
+    # segments_conf.management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
 end
 
 segments_conf.doit # launch wizard

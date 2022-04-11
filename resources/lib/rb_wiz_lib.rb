@@ -432,11 +432,13 @@ EOF
                     checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
-                    segment = {}
-                    segment["name"] = "br" + (@segments.count > 0 ? @segments.count.to_s : 0.to_s)
-                    segment["ports"] = checklist_selected_items.join.split(" ")
-                    segment['bypass_support'] = false
-                    @segments.push(segment)
+                    if checklist_selected_items and !checklist_selected_items.empty?
+                        segment = {}
+                        segment["name"] = "br" + (@segments.count > 0 ? @segments.count.to_s : 0.to_s)
+                        segment["ports"] = checklist_selected_items.join.split(" ")
+                        segment['bypass_support'] = false
+                        @segments.push(segment)
+                    end
 
                 end
 
