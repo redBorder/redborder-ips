@@ -60,18 +60,18 @@ if [ "x$SEGMENTS" != "x" -a "x$STATUS" == "xon" -o "x$STATUS" == "xoff" -o $GETB
             MASTER=`ls /sys/class/net/$segment/brif|head -n 1`
             for port in $(ls /sys/class/net/$segment/brif); do
                 echo "$port" | egrep -q "^eth[[:digit:]]+$|^dna[[:digit:]]+$"
-                /usr/sbin/bin/bpctl_util $port is_bypass | grep -q "The interface is a control interface"
+                /usr/bin/bpctl_util $port is_bypass | grep -q "The interface is a control interface"
                 if [ $? -eq 0 ]; then
                     MASTER=$port
                     break
                 fi
             done
             if [ "x$MASTER" != "x"  ]; then
-                echo "$MASTER" | egrep -q "^eth[[:digit:]]+$|^dna[[:digit:]]+$"
+                echo "$MASTER" | egrep -q "^e*|^dna[[:digit:]]+$"
                 if [ $? -eq 0 ]; then
                     if [ $GETBYPASS -eq 1 ]; then
                         echo -n "$segment ($MASTER): "
-                        OUT=$(/usr/sbin/bin/bpctl_util $MASTER get_bypass)
+                        OUT=$(/usr/bin/bpctl_util $MASTER get_bypass)
                         echo $OUT
                         echo $OUT | grep -q " is in the Bypass mode.$"
                         if [ $? -eq 0 ]; then
@@ -81,7 +81,7 @@ if [ "x$SEGMENTS" != "x" -a "x$STATUS" == "xon" -o "x$STATUS" == "xoff" -o $GETB
                         fi
                     else
                         echo -n "Changing bypass for $segment ($MASTER): "
-                        OUT=$(/usr/sbin/bin/bpctl_util $MASTER set_bypass $STATUS)
+                        OUT=$(/usr/bin/bpctl_util $MASTER set_bypass $STATUS)
                         echo $OUT | grep -q " completed successfully."
                         RET=$?
                         echo $OUT
