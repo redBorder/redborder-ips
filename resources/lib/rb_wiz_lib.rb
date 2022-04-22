@@ -433,10 +433,25 @@ EOF
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
                     if checklist_selected_items and !checklist_selected_items.empty?
+                        
                         segment = {}
-                        segment["name"] = "br" + (@segments.count > 0 ? @segments.count.to_s : 0.to_s)
-                        segment["ports"] = checklist_selected_items.join.split(" ")
-                        segment['bypass_support'] = false
+                        ports = checklist_selected_items.join.split(" ")
+                        segment["ports"] = ports
+
+                        next if ports.count > 2
+                        all_port_bypass = ports.count == 1 ? false : true 
+                        ports.each{ |port| all_port_bypass = false unless Config_utils.net_get_device_bypass_support(port) }
+
+                        if all_port_bypass
+                            bpbr_segments = @segments.select{|s| s.name.start_with?"bp"}
+                            segment["name"] = "bpbr" + bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
+                            segment['bypass_support'] = true
+                        else
+                            br_segments = @segments.select{|s| s.name.start_with?"br"}
+                            segment["name"] = "br" + br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
+                            segment['bypass_support'] = false
+                        end                     
+
                         @segments.push(segment)
                     end
 

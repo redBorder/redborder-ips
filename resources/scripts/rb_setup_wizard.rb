@@ -6,7 +6,7 @@ require 'yaml'
 require "#{ENV['RBLIB']}/rb_wiz_lib"
 require "#{ENV['RBLIB']}/rb_config_utils.rb"
 
-CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
+CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml" unless CONFFILE
 DIALOGRC = "#{ENV['RBETC']}/dialogrc"
 if File.exist?(DIALOGRC)
     ENV['DIALOGRC'] = DIALOGRC
@@ -29,6 +29,10 @@ EOF
     exit(1)
 
 end
+
+# init
+puts "Getting data. Please wait ... "
+Config_utils.net_init_bypass
 
 puts "\033]0;redborder - setup wizard\007"
 
@@ -133,8 +137,10 @@ segments_conf = SegmentsConf.new
 # Get segments and management interface from the rb_init_conf.yml if exists
 if File.exists?(CONFFILE)   
     init_conf = YAML.load_file(CONFFILE)
-    segments_conf.segments = init_conf["segments"] rescue []
     segments_conf.management_interface = init_conf["network"]["interfaces"].first["device"] rescue nil
+    actual_segments = init_conf["segments"] rescue []
+    segments_conf.segments = Config_utils.net_segment_autoassign_bypass(actual_segments, segments_conf.management_interface)
+
 end
 
 # Get actual managment interface if user just set
@@ -215,7 +221,8 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-command = "#{ENV['RBBIN']}/rb_init_conf"
+###command = "#{ENV['RBBIN']}/rb_init_conf"
+command = "ls"
 
 dialog = MRDialog.new
 dialog.clear = false
