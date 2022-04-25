@@ -268,7 +268,7 @@ module Config_utils
     if net_get_device_bypass_support(interface)
         system("bpctl_util ${interface} get_bypass_slave | grep -q -i \"The interface is a slave interface\"")
         return interface if $?.success?
-        return `bpctl_util #{interface} get_bypass_slave | grep \"^slave: \" | awk '{print $3}'`
+        return `bpctl_util #{interface} get_bypass_slave | grep \"^slave: \" | awk '{print $3}'`.strip
     else
         return false
     end

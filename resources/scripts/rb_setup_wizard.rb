@@ -95,7 +95,7 @@ dialog.clear = true
 dialog.title = "Configure Network"
 dialog.cancel_label = "SKIP"
 dialog.no_label = "SKIP"
-yesno = init_conf_network.nil? ? true : dialog.yesno(text,0,0)
+yesno = (init_conf_network.nil? or init_conf_network['interfaces'].empty?) ? true : dialog.yesno(text,0,0)
 
 if yesno # yesno is "yes" -> true
 
@@ -106,7 +106,7 @@ if yesno # yesno is "yes" -> true
         netconf.doit # launch wizard
         cancel_wizard and break if netconf.cancel
         general_conf["network"]["interfaces"] = netconf.conf
-        break if netconf.conf
+        break unless general_conf["network"]["interfaces"].empty?
     end
 
 
@@ -226,8 +226,7 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-###command = "#{ENV['RBBIN']}/rb_init_conf"
-command = "ls"
+command = "#{ENV['RBBIN']}/rb_init_conf"
 
 dialog = MRDialog.new
 dialog.clear = false
