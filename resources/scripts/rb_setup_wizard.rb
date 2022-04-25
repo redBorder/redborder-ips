@@ -229,6 +229,8 @@ end
 
 text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
 
+text += "\n- Make Registration: #{make_registration}\n"
+
 text += "\nPlease, is this configuration ok?\n \n"
 
 dialog = MRDialog.new
