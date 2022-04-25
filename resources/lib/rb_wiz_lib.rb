@@ -38,7 +38,7 @@ end
 # Class to create a Network configuration box
 class NetConf < WizConf
 
-    attr_accessor :conf, :cancel
+    attr_accessor :conf, :cancel, :segments
 
     def initialize
         @cancel = false
@@ -46,6 +46,7 @@ class NetConf < WizConf
         @confdev = {}
         @devmode = { "dhcp" => "Dynamic", "static" => "Static" }
         @devmodereverse = { "Dynamic" => "dhcp", "Static" => "static" }
+        @segments = []
     end
 
     def doit
@@ -75,6 +76,7 @@ EOF
                 next if netdev == "lo"
                 netdevprop = netdev_property(netdev)
                 next unless (netdevprop["ID_BUS"] == "pci" and !netdevprop["MAC"].nil?)
+                next if segments and !segments.select{|segment| segment["ports"].include?netdev}.empty?
                 data.tag = netdev
                 # set default value
                 @confdev[netdev] = {"mode" => "dhcp"} if @confdev[netdev].nil?
@@ -396,7 +398,7 @@ EOF
                     # loopback and devices with no pci nor mac are not welcome!
                     next if netdev == "lo"
                     netdevprop = netdev_property(netdev)
-                    next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
+                    next unless (netdevprop["ID_BUS"] == "pci" and !netdevprop["MAC"].nil?)
 
                     data = checklist_data.new
                     data.tag = netdev
@@ -433,7 +435,6 @@ EOF
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
                     if checklist_selected_items and !checklist_selected_items.empty?
-                        
                         segment = {}
                         ports = checklist_selected_items.join.split(" ")
                         segment["ports"] = ports
@@ -444,14 +445,14 @@ EOF
 
                         if all_port_bypass
                             bpbr_segments = @segments.select{|s| s.name.start_with?"bp"}
-                            segment["name"] = "bpbr" + bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
+                            segment["name"] = "bpbr" + (bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = true
                         else
                             br_segments = @segments.select{|s| s.name.start_with?"br"}
-                            segment["name"] = "br" + br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
+                            segment["name"] = "br" + (br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = false
                         end                     
-
+                                                  
                         @segments.push(segment)
                     end
 
