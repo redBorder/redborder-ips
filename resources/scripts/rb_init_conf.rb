@@ -77,7 +77,7 @@ unless network.nil? # network will not be defined in cloud deployments
       list_net_conf = Dir.entries("/etc/sysconfig/network-scripts/").select {|f| !File.directory? f}
       list_net_conf.each do |netconf|
         next unless netconf.start_with?"ifcfg-b" # We only need the bridges        
-        bridge = netconf.tr("ifcfg-","")
+        bridge = netconf.gsub("ifcfg-","")
 
         # If the bridge is not in the yaml file of the init_conf
         # we add to delete the bridge and its interfaces
@@ -91,7 +91,7 @@ unless network.nil? # network will not be defined in cloud deployments
           # those who dont we add them to be deleted
           bridge_interfaces = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE=\"#{bridge}\"'`.split("\n")
           bridge_interfaces.each do |iface_path_file|
-            iface = iface_path_file.split("/").last.tr("ifcg-","")
+            iface = iface_path_file.split("/").last.gsub("ifcg-","")
             if segments.select{|s| s['name'] == bridge and s['ports'].include?iface}.empty?
               files_to_delete.push(iface_path_file)
             end
