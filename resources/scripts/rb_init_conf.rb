@@ -208,7 +208,7 @@ system('yum install systemd -y')
 ###########################
 # configure cloud address #
 ###########################
-if opt[r]
+if opt["r"]
   if Config_utils.check_cloud_address(cloud_address)
     IPSOPTS="-t ips -i -d -f"
     system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")

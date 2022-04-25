@@ -158,16 +158,33 @@ segments_conf.doit # launch wizard
 cancel_wizard if segments_conf.cancel
 general_conf["segments"] = segments_conf.conf
 
-###############################
-# CLOUD ADDRESS CONFIGURATION #
-###############################
+################
+# Registration #
+################
+make_registration = true
+unless init_conf_cloud_address.nil?
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Confirm configuration"
+    text = <<EOF
 
-# Conf for hostname and domain
-cloud_address_conf = CloudAddressConf.new
-cloud_address_conf.doit # launch wizard
-cancel_wizard if cloud_address_conf.cancel
-general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+Your IPS was registered already, do you want to register again?
 
+EOF
+    make_registration = dialog.yesno(text,0,0)
+end
+
+if make_registration 
+    ###############################
+    # CLOUD ADDRESS CONFIGURATION #
+    ###############################
+
+    # Conf for hostname and domain
+    cloud_address_conf = CloudAddressConf.new
+    cloud_address_conf.doit # launch wizard
+    cancel_wizard if cloud_address_conf.cancel
+    general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+end
 
 ###############################
 #     BUILD DESCRIPTION       #
@@ -226,7 +243,10 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-command = "#{ENV['RBBIN']}/rb_init_conf -r"
+command_opts = "-r" if make_registration
+command = "#{ENV['RBBIN']}/rb_init_conf #{command_opts}"
+
+
 
 dialog = MRDialog.new
 dialog.clear = false
