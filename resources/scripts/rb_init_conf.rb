@@ -104,7 +104,7 @@ unless network.nil? # network will not be defined in cloud deployments
       #
       files_to_delete.each do |iface_path_file|
         # Get the interface name from the file path
-        iface = iface_path_file.split("/").last.tr("ifcg-","")
+        iface = iface_path_file.split("/").last.gsub("ifcfg-","")
         # Put the interface down
         puts "Stopping dev #{iface} .."
         system("ip link set dev #{iface} down")
@@ -178,7 +178,7 @@ unless network.nil? # network will not be defined in cloud deployments
   end
 
   # Restart NetworkManager
-  system('service network restart &> /dev/null')
+  system('service network restart & &> /dev/null')
 end
 
 # TODO: check network connectivity. Try to resolve repo.redborder.com

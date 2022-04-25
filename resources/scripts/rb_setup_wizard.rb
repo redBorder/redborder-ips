@@ -156,7 +156,8 @@ end
 
 segments_conf.doit # launch wizard
 cancel_wizard if segments_conf.cancel
-general_conf["segments"] = segments_conf.conf
+general_conf["segments"] = segments_conf.conf rescue nil
+general_conf["segments"] = nil if general_conf["segments"] and general_conf["segments"].empty?
 
 ################
 # Registration #
