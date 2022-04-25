@@ -348,15 +348,15 @@ EOF
             data = menu_data.new
 
             text += "Segments: \n"
-            @segments.each do |segment|
+            segments.each do |segment|
                 text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
             end
             text += "\n"
             
             # TODO: force bypass option
-            # data.tag = "Force bypass"
-            # data.item = "Force bypass auto assign"
-            # items.push(data.to_a)
+            data.tag = "Force bypass"
+            data.item = "Force bypass auto assign"
+            items.push(data.to_a)
 
             data.tag  = "New segment"
             data.item = "Create new segment"
@@ -383,7 +383,7 @@ EOF
                 break
             when "Force bypass"
                 #TODO
-                break
+                @segments = Config_utils.net_segment_autoassign_bypass(segments, management_interface)
             when "New segment"
                 checklist_data = Struct.new(:tag, :item, :select)
                 
@@ -444,11 +444,11 @@ EOF
                         ports.each{ |port| all_port_bypass = false unless Config_utils.net_get_device_bypass_support(port) }
 
                         if all_port_bypass
-                            bpbr_segments = @segments.select{|s| s.name.start_with?"bp"}
+                            bpbr_segments = segments.select{|s| s.name.start_with?"bp"} rescue []
                             segment["name"] = "bpbr" + (bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = true
                         else
-                            br_segments = @segments.select{|s| s.name.start_with?"br"}
+                            br_segments = segments.select{|s| s.name.start_with?"br"} rescue []
                             segment["name"] = "br" + (br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = false
                         end                     
@@ -486,12 +486,16 @@ EOF
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
                     checklist_selected_items.each do |segment|
-                        @segments.delete_if{|s| s["name"] == segment}
+                        @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?
                     end
 
                     # Reorganice segment names
                     @segments.each_with_index do |segment, index|
-                        segment["name"] = "br#{index}"
+                        if segment["name"].start_with?"br" 
+                          segment["name"] = "br#{index}" 
+                        else 
+                          segment["name"] = "bpbr#{index}"
+                        end
                         @segments[index] = segment
                     end
                 end

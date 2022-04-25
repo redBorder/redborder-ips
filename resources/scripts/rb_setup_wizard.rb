@@ -16,8 +16,7 @@ end
 init_conf = YAML.load_file(CONFFILE) rescue nil
 init_conf_cloud_address = init_conf['cloud_address'] rescue nil
 init_conf_network = init_conf['network'] rescue nil
-init_conf_segments = init_conf['segments'] rescue nil
-
+init_conf_segments = init_conf['segments'] || [] rescue []
 def cancel_wizard()
 
     dialog = MRDialog.new
@@ -147,8 +146,7 @@ segments_conf = SegmentsConf.new
 
 # Get segments and management interface from the old configuration
 segments_conf.management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
-segments_conf.segments = Config_utils.net_segment_autoassign_bypass(init_conf_segments, segments_conf.management_interface) rescue nil
-
+segments_conf.segments = Config_utils.net_segment_autoassign_bypass(init_conf_segments, segments_conf.management_interface) rescue []
 
 # Get actual managment interface if user just set
 unless general_conf["network"]["interfaces"].empty? # meaning the user did not skip network configuration

@@ -268,7 +268,7 @@ module Config_utils
     if net_get_device_bypass_support(interface)
         system("bpctl_util ${interface} get_bypass_slave | grep -q -i \"The interface is a slave interface\"")
         return interface if $?.success?
-        return system("bpctl_util #{interface} get_bypass_slave | grep \"^slave: \" | awk '{print $3}'")
+        return `bpctl_util #{interface} get_bypass_slave | grep \"^slave: \" | awk '{print $3}'`
     else
         return false
     end
@@ -294,7 +294,7 @@ module Config_utils
       index_slave = net_get_device_bypass_slave(index_master)
       next if index_slave == management_interface
       next unless segments.select{|segment| segment.key?"ports" and segment["ports"].include? index_slave}.empty?
-      bypass_segments = segments.select{|s| s.name.start_with?"bp"}
+      bypass_segments = segments.select{|s| s.name.start_with?"bp"} rescue []
       segment = {}
       segment["name"] = "bpbr" + (bypass_segments.count > 0 ? bypass_segments.count.to_s : 0.to_s)
       segment["ports"] = "#{index_master} #{index_slave}".split(" ")
