@@ -91,7 +91,7 @@ unless network.nil? # network will not be defined in cloud deployments
           # those who dont we add them to be deleted
           bridge_interfaces = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE=\"#{bridge}\"'`.split("\n")
           bridge_interfaces.each do |iface_path_file|
-            iface = iface_path_file.split("/").last.gsub("ifcg-","")
+            iface = iface_path_file.split("/").last.gsub("ifcfg-","")
             if segments.select{|s| s['name'] == bridge and s['ports'].include?iface}.empty?
               files_to_delete.push(iface_path_file)
             end
