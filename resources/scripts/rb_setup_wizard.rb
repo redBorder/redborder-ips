@@ -226,7 +226,7 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-command = "#{ENV['RBBIN']}/rb_init_conf"
+command = "#{ENV['RBBIN']}/rb_init_conf -r"
 
 dialog = MRDialog.new
 dialog.clear = false

@@ -13,10 +13,18 @@ require 'ipaddr'
 require 'netaddr'
 require 'system/getifaddrs'
 require 'json'
+require "getopt/std"
 require File.join(ENV['RBLIB'].nil? ? '/usr/lib/redborder/lib' : ENV['RBLIB'],'rb_config_utils.rb')
 
 RBETC = ENV['RBETC'].nil? ? '/etc/redborder' : ENV['RBETC']
 INITCONF="#{RBETC}/rb_init_conf.yml"
+
+opt = Getopt::Std.getopts("hr")
+if opt["h"] 
+  printf "rb_init_conf [-r] \n"
+  printf "    -r                -> register sensor with manager\n"
+  exit 1
+end
 
 init_conf = YAML.load_file(INITCONF)
 
@@ -200,10 +208,12 @@ system('yum install systemd -y')
 ###########################
 # configure cloud address #
 ###########################
-if Config_utils.check_cloud_address(cloud_address)
-  IPSOPTS="-t ips -i -d -f"
-  system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")
-else
-  p err_msg = "Invalid cloud address. Please review #{INITCONF} file"
-  exit 1
+if opt[r]
+  if Config_utils.check_cloud_address(cloud_address)
+    IPSOPTS="-t ips -i -d -f"
+    system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")
+  else
+    p err_msg = "Invalid cloud address. Please review #{INITCONF} file"
+    exit 1
+  end
 end
