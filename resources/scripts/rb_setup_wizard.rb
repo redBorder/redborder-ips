@@ -6,12 +6,17 @@ require 'yaml'
 require "#{ENV['RBLIB']}/rb_wiz_lib"
 require "#{ENV['RBLIB']}/rb_config_utils.rb"
 
-CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
+CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml" unless CONFFILE
 DIALOGRC = "#{ENV['RBETC']}/dialogrc"
 if File.exist?(DIALOGRC)
     ENV['DIALOGRC'] = DIALOGRC
 end
 
+# Load old configuration if any
+init_conf = YAML.load_file(CONFFILE) rescue nil
+init_conf_cloud_address = init_conf['cloud_address'] rescue nil
+init_conf_network = init_conf['network'] rescue nil
+init_conf_segments = init_conf['segments'] || [] rescue []
 def cancel_wizard()
 
     dialog = MRDialog.new
@@ -29,6 +34,10 @@ EOF
     exit(1)
 
 end
+
+# init
+puts "Getting data. Please wait ... "
+Config_utils.net_init_bypass
 
 puts "\033]0;redborder - setup wizard\007"
 
@@ -86,15 +95,20 @@ dialog.clear = true
 dialog.title = "Configure Network"
 dialog.cancel_label = "SKIP"
 dialog.no_label = "SKIP"
-yesno = dialog.yesno(text,0,0)
+yesno = (init_conf_network.nil? or init_conf_network['interfaces'].empty?) ? true : dialog.yesno(text,0,0)
 
 if yesno # yesno is "yes" -> true
 
     # Conf for network
     netconf = NetConf.new
-    netconf.doit # launch wizard
-    cancel_wizard if netconf.cancel
-    general_conf["network"]["interfaces"] = netconf.conf
+    loop do
+        netconf.segments = init_conf_segments
+        netconf.doit # launch wizard
+        cancel_wizard and break if netconf.cancel
+        general_conf["network"]["interfaces"] = netconf.conf
+        break unless general_conf["network"]["interfaces"].empty?
+    end
+
 
     # Conf for DNS
     text = <<EOF
@@ -130,12 +144,9 @@ end
 # Conf network segments
 segments_conf = SegmentsConf.new
 
-# Get segments and management interface from the rb_init_conf.yml if exists
-if File.exists?(CONFFILE)   
-    init_conf = YAML.load_file(CONFFILE)
-    segments_conf.segments = init_conf["segments"] rescue []
-    segments_conf.management_interface = init_conf["network"]["interfaces"].first["device"] rescue nil
-end
+# Get segments and management interface from the old configuration
+segments_conf.management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
+segments_conf.segments = Config_utils.net_segment_autoassign_bypass(init_conf_segments, segments_conf.management_interface) rescue []
 
 # Get actual managment interface if user just set
 unless general_conf["network"]["interfaces"].empty? # meaning the user did not skip network configuration
