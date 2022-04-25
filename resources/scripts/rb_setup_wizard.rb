@@ -227,9 +227,9 @@ unless general_conf["segments"].nil?
     end
 end
 
-text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
-
 text += "\n- Make Registration: #{make_registration}\n"
+
+text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
 
 text += "\nPlease, is this configuration ok?\n \n"
 
