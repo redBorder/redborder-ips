@@ -75,7 +75,7 @@ EOF
                 # loopback and devices with no pci nor mac are not welcome!
                 next if netdev == "lo"
                 netdevprop = netdev_property(netdev)
-                next unless (netdevprop["ID_BUS"] == "pci" and !netdevprop["MAC"].nil?)
+                next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
                 next if segments and !segments.select{|segment| segment["ports"].include?netdev}.empty?
                 next if Config_utils.net_get_device_bypass_support(netdev)
                 data.tag = netdev
@@ -399,7 +399,7 @@ EOF
                     # loopback and devices with no pci nor mac are not welcome!
                     next if netdev == "lo"
                     netdevprop = netdev_property(netdev)
-                    next unless (netdevprop["ID_BUS"] == "pci" and !netdevprop["MAC"].nil?)
+                    next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
                     data = checklist_data.new
                     data.tag = netdev
                     data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
