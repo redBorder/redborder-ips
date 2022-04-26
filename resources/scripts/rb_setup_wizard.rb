@@ -164,8 +164,14 @@ general_conf["segments"] = nil if general_conf["segments"] and general_conf["seg
 
 # For each segment interfaces we need to remove it from the general_conf["network"]["interfaces"] so
 # it doesnt end as part of a segment and  as managmenet interface
-general_conf["segments"].each do |segment|
-    general_conf["network"]["interfaces"].delete_if{ |interface| segment["ports"].include? interface["device"]}
+unless general_conf["segments"].nil?
+    general_conf["segments"].each do |segment|
+        general_conf["network"]["interfaces"].delete_if{ |interface| segment["ports"].include? interface["device"]}
+    end
+end
+# Add the deleted segments to the general_conf["network"]["interfaces"] so it stays configure as dhcp
+segments_conf.deleted_segments.each do |segment|
+    general_conf["network"]["interfaces"].push({"mode": "dhcp", "device": "#{segment}"})
 end
 
 ################

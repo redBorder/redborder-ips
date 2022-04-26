@@ -320,13 +320,14 @@ end
 
 class SegmentsConf < WizConf
 
-    attr_accessor :segments, :management_interface, :conf, :cancel
+    attr_accessor :segments, :deleted_segments, :management_interface, :conf, :cancel
 
     def initialize
         @cancel = false
         @conf = []
         @management_interface = nil
         @segments = []
+        @deleted_segments = []
     end
 
     def doit
@@ -487,6 +488,7 @@ EOF
 
                     checklist_selected_items.each do |segment|
                         @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?
+                        @deleted_segments.push(segment) if @segments.select{|s| s["name"] == segment}.empty?
                     end
 
                     # Reorganice segment names
