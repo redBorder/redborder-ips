@@ -177,6 +177,7 @@ unless network.nil? # network will not be defined in cloud deployments
   end
 
   # Restart NetworkManager
+  system('pkill dhclient &> /dev/null')
   system('service network restart & &> /dev/null')
 end
 

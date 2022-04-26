@@ -171,7 +171,9 @@ unless general_conf["segments"].nil?
 end
 # Add the deleted segments to the general_conf["network"]["interfaces"] so it stays configure as dhcp
 segments_conf.deleted_segments.each do |segment|
-    general_conf["network"]["interfaces"].push({"mode": "dhcp", "device": "#{segment}"})
+    segment["ports"].each do |port|
+        general_conf["network"]["interfaces"].push({"mode" => "dhcp", "device" => "#{port}"})
+    end
 end
 
 ################

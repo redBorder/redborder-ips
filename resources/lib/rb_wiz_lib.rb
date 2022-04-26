@@ -487,8 +487,10 @@ EOF
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
                     checklist_selected_items.each do |segment|
-                        @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?
-                        @deleted_segments.push(segment) if @segments.select{|s| s["name"] == segment}.empty?
+                        # Store the segments to be deleted in @delete_segments
+                        @segments.each{ |s|  @deleted_segments.push(s) if s["name"] == segment }
+                        # Delete the segment from @segments
+                        @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?                        
                     end
 
                     # Reorganice segment names
