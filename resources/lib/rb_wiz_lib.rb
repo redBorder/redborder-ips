@@ -75,7 +75,7 @@ EOF
                 # loopback and devices with no pci nor mac are not welcome!
                 next if netdev == "lo"
                 netdevprop = netdev_property(netdev)
-                next unless (netdevprop["ID_BUS"] == "pci" and !netdevprop["MAC"].nil?)
+                next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
                 next if segments and !segments.select{|segment| segment["ports"].include?netdev}.empty?
                 next if Config_utils.net_get_device_bypass_support(netdev)
                 data.tag = netdev
@@ -320,13 +320,14 @@ end
 
 class SegmentsConf < WizConf
 
-    attr_accessor :segments, :management_interface, :conf, :cancel
+    attr_accessor :segments, :deleted_segments, :management_interface, :conf, :cancel
 
     def initialize
         @cancel = false
         @conf = []
         @management_interface = nil
         @segments = []
+        @deleted_segments = []
     end
 
     def doit
@@ -399,7 +400,7 @@ EOF
                     # loopback and devices with no pci nor mac are not welcome!
                     next if netdev == "lo"
                     netdevprop = netdev_property(netdev)
-                    next unless (netdevprop["ID_BUS"] == "pci" and !netdevprop["MAC"].nil?)
+                    next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
                     data = checklist_data.new
                     data.tag = netdev
                     data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
@@ -486,7 +487,10 @@ EOF
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
                     checklist_selected_items.each do |segment|
-                        @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?
+                        # Store the segments to be deleted in @delete_segments
+                        @segments.each{ |s|  @deleted_segments.push(s) if s["name"] == segment }
+                        # Delete the segment from @segments
+                        @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?                        
                     end
 
                     # Reorganice segment names

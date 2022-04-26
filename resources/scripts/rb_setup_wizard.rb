@@ -145,7 +145,10 @@ end
 segments_conf = SegmentsConf.new
 
 # Get segments and management interface from the old configuration
-segments_conf.management_interface = general_conf["network"]["interfaces"].first["device"] rescue nil
+# If there is only one interfaces this is for sure the management
+if general_conf["network"]["interfaces"].count  == 1
+  segments_conf.management_interface = general_conf["network"]["interfaces"].first
+end
 segments_conf.segments = Config_utils.net_segment_autoassign_bypass(init_conf_segments, segments_conf.management_interface) rescue []
 
 # Get actual managment interface if user just set
@@ -156,18 +159,50 @@ end
 
 segments_conf.doit # launch wizard
 cancel_wizard if segments_conf.cancel
-general_conf["segments"] = segments_conf.conf
+general_conf["segments"] = segments_conf.conf rescue nil
+general_conf["segments"] = nil if general_conf["segments"] and general_conf["segments"].empty?
 
-###############################
-# CLOUD ADDRESS CONFIGURATION #
-###############################
+# For each segment interfaces we need to remove it from the general_conf["network"]["interfaces"] so
+# it doesnt end as part of a segment and  as managmenet interface
+unless general_conf["segments"].nil?
+    general_conf["segments"].each do |segment|
+        general_conf["network"]["interfaces"].delete_if{ |interface| segment["ports"].include? interface["device"]}
+    end
+end
+# Add the deleted segments to the general_conf["network"]["interfaces"] so it stays configure as dhcp
+segments_conf.deleted_segments.each do |segment|
+    segment["ports"].each do |port|
+        general_conf["network"]["interfaces"].push({"mode" => "dhcp", "device" => "#{port}"})
+    end
+end
 
-# Conf for hostname and domain
-cloud_address_conf = CloudAddressConf.new
-cloud_address_conf.doit # launch wizard
-cancel_wizard if cloud_address_conf.cancel
-general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+################
+# Registration #
+################
+make_registration = true
+unless init_conf_cloud_address.nil?
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Confirm configuration"
+    text = <<EOF
 
+Your IPS was registered already, do you want to register again?
+
+EOF
+    make_registration = dialog.yesno(text,0,0)
+end
+
+if make_registration 
+    ###############################
+    # CLOUD ADDRESS CONFIGURATION #
+    ###############################
+
+    # Conf for hostname and domain
+    cloud_address_conf = CloudAddressConf.new
+    cloud_address_conf.doit # launch wizard
+    cancel_wizard if cloud_address_conf.cancel
+    general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+end
 
 ###############################
 #     BUILD DESCRIPTION       #
@@ -196,21 +231,23 @@ unless general_conf["network"]["interfaces"].empty?
     end
 end
 
-unless general_conf["network"]["dns"].nil?
+unless general_conf["network"]["dns"].nil? or general_conf["network"]["dns"].empty?
     text += "- DNS:\n"
     general_conf["network"]["dns"].each do |dns|
         text += "    #{dns}\n"
     end
 end
 
-unless general_conf["segments"].nil?
-    text += "- SEGMENTS:\n"
+unless general_conf["segments"].nil? or general_conf["segments"].empty?
+    text += "- Segments:\n"
     general_conf["segments"].each do |s|
         text += "    name: #{s["name"]} | ports: #{s["ports"]} | bypass_support: #{s["bypass_support"]}\n"
     end
 end
 
-text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
+text += "\n- Make Registration: #{make_registration}\n"
+
+text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
 
 text += "\nPlease, is this configuration ok?\n \n"
 
@@ -226,7 +263,10 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-command = "#{ENV['RBBIN']}/rb_init_conf"
+command_opts = "-r" if make_registration
+command = "#{ENV['RBBIN']}/rb_init_conf #{command_opts}"
+
+
 
 dialog = MRDialog.new
 dialog.clear = false
