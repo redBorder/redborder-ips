@@ -509,6 +509,9 @@ EOF
                 break
             end
         end
+        # Delete segment from @deleted_segment if the use created it
+        @segments.each{|segment| @deleted_segments.delete_if{|s| s["name"] == segment["name"] }
+            
         @conf = @segments
     end
 end
