@@ -249,7 +249,7 @@ module Config_utils
 
   def self.net_get_device_bypass_master(interface)
     return false unless net_get_device_bypass_support(interface)
-    system("bpctl_util ${interface} get_bypass_slave | grep -q -i \"The interface is a slave interface\"")
+    system("bpctl_util #{interface} get_bypass_slave | grep -q -i \"The interface is a slave interface\"")
     return !$?.success?
   end
 

@@ -396,7 +396,7 @@ EOF
                     # we skip netdev that is taken by the management interface
                     next if @management_interface and netdev == @management_interface 
                     # we skip the netdev that is already in a segment
-                    next if !@segments.select{|segment| segment["ports"].include?netdev}.empty?
+                    next unless @segments.select{|segment| segment["ports"].include? netdev }.empty?
                     # loopback and devices with no pci nor mac are not welcome!
                     next if netdev == "lo"
                     netdevprop = netdev_property(netdev)
@@ -510,7 +510,7 @@ EOF
             end
         end
         # Delete segment from @deleted_segment if the use created it
-        @segments.each{|segment| @deleted_segments.delete_if{|s| s["name"] == segment["name"] }
+        @segments.each{|segment| @deleted_segments.delete_if{|s| s["name"] == segment["name"] } }
             
         @conf = @segments
     end
