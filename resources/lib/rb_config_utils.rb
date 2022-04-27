@@ -231,7 +231,7 @@ module Config_utils
 
   # Function to start bpctl if the machine support it
   def self.net_init_bypass
-    return false unless File.exists?("/dev/bpctl")
+    return true if File.exists?("/dev/bpctl")
 
     # trying to initialize bypass module controller
     system("/usr/bin/bpctl_start &>/dev/null")
