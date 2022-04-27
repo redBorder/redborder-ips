@@ -304,6 +304,49 @@ module Config_utils
     return segments
   end
 
+  def self.get_pf_ring_num_slots(num_segments)
+    net_queues = `ls -d /sys/class/cpuid/* | wc -l`.strip.to_i
+    mem_total = `cat /proc/meminfo |grep MemTotal|awk '{print $2}'`.strip.to_i
+    mem_slots = 16384*1 # Default value
+    if mem_total > 32000000
+      mem_slots = 16384*1 # 16k
+    elsif mem_total > 64000000 
+      if num_segments == 1
+        num_slots = 16384*4 # 64k
+      elsif num_segments == 2
+        num_slots = 16384*2 # 32k
+      elsif num_segments == 3
+        num_slots = 16384*2 # 32k
+      else #>= 4 segments
+        num_slots = 16384*1 # 16k
+      end
+    else # >= 64Gbytes
+      if num_segments == 1 
+        num_slots = 16384*8 #128k
+      elsif num_segments < 4
+        num_slots = 16384*4 #64k
+      else
+        num_slots = 16384*2 #32k
+      end
+    end
+
+    if num_slots > 16384 and net_queues > 8
+      num_slots = num_slots / 2
+    end
+    return num_slots
+  end
+
+  def self.get_pf_ring_bypass_interfaces
+    pf_ring_bypass_interfaces = []
+    listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+    listnetdev.each do |netdev|
+        # loopback and devices with no pci nor mac are not welcome!
+        next if netdev == "lo"
+        pf_ring_bypass_interfaces.push(netdev) if Config_utils.net_get_device_bypass_support(netdev)
+    end
+    return pf_ring_bypass_interfaces
+  end
+
 end
 
 ## vim:ts=4:sw=4:expandtab:ai:nowrap:formatoptions=croqln:

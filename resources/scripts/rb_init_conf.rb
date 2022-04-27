@@ -39,6 +39,44 @@ open("/etc/redborder/rb_init_conf.conf", "w") { |f|
   f.puts "#REBORDER ENV VARIABLES"
 }
 
+# Apply config preparation
+#system('systemctl stop chef-client &>/dev/null')
+system('service snortd stop &>/dev/null') if File.exists?("/etc/rc.d/init.d/snortd")
+# TODO: /etc/sysconfig/network-scripts/ifcfg-* is needed?
+system('service kdump stop &>/dev/null')
+# TODO: rm -f /etc/sysconfig/network-scripts/route-* is needed?
+
+#
+# Configuration of /etc/modprobe.d/redBorder.conf
+#
+system('rm -f /etc/modprobe.d/redBorder.conf')
+
+num_segments = segments.nil? ? 0 : segments.count
+num_slots = Config_utils.get_pf_ring_num_slots(num_segments)
+pfring_bypass_interfaces = Config_utils.get_pf_ring_bypass_interfaces.empty? ? nil : Config_utils.get_pf_ring_bypass_interfaces
+system('modinfo pf_ring | grep -q bypass_interfaces')
+if $?.success?
+  `echo "options pf_ring enable_tx_capture=0 enable_frag_coherence=1 min_num_slots=#{num_slots} bypass_interfaces=#{pfring_bypass_interfaces}" >> /etc/modprobe.d/redBorder.conf`
+else
+  `echo "options pf_ring enable_tx_capture=0 enable_frag_coherence=1 min_num_slots=#{num_slots}" >> /etc/modprobe.d/redBorder.conf`
+end
+
+# Set igb RSS value to 0 for an automatic managing of queues
+`echo "options igb RSS=0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0" > /etc/modprobe.d/redBorderStatic.conf`
+
+open("/etc/depmod.d/kmod-redBorder.conf", 'w') { |f|
+  f.puts "# depmod.conf"
+  f.puts "#"
+  f.puts "# redBorder depmod configuration"
+  f.puts "# override default search ordering for kmod packaging"
+  f.puts "override bpctl_mod * weak-updates/bpctl_mod"
+  f.puts "override pf_ring   * weak-updates/pf_ring"
+  f.puts "override ixgbe * weak-updates/ixgbe"
+}
+
+system('depmod')
+system('modprobe pf_ring')
+
 
 ####################
 # Set NETWORK      #
@@ -149,6 +187,11 @@ unless network.nil? # network will not be defined in cloud deployments
           f.puts "DELAY=0"
           f.puts "STP=off"
         }
+        if Config_utils.net_get_device_bypass_master(iface)
+          # this port is a bypass master ... need to set to standard nic
+          system("bpctl_util #{iface} set_std_nic off")
+          system("bpctl_util #{iface} set_bypass on")
+        end
       end
     end
   end
@@ -157,6 +200,7 @@ unless network.nil? # network will not be defined in cloud deployments
   network['interfaces'].each do |iface|
     dev = iface['device']
     iface_mode = iface['mode']
+
     open("/etc/sysconfig/network-scripts/ifcfg-#{dev}", 'w') { |f|
       if iface_mode != 'dhcp'
         if Config_utils.check_ipv4({:ip => iface['ip'], :netmask => iface['netmask']})  and Config_utils.check_ipv4(:ip => iface['gateway'])
@@ -174,11 +218,18 @@ unless network.nil? # network will not be defined in cloud deployments
       f.puts "ONBOOT=yes"
       f.puts "UUID=#{dev_uuid}"
     }
+
+    if Config_utils.net_get_device_bypass_master(dev)
+      # this port is a bypass master ... need to set to standard nic
+      system("bpctl_util #{dev} set_std_nic on")
+    end
   end
 
   # Restart NetworkManager
   system('pkill dhclient &> /dev/null')
-  system('service network restart & &> /dev/null')
+  puts "Restarting the network.."
+  system('service network restart &> /dev/null')
+  sleep 10
 end
 
 # TODO: check network connectivity. Try to resolve repo.redborder.com
@@ -204,6 +255,10 @@ end
 
 # Upgrade system
 system('yum install systemd -y')
+
+#system('systemctl start chef-client &>/dev/null') unless opt["r"]
+#TODO: check if needed: rm -f /boot/initrd*kdump.*
+system('service kdump start')
 
 ###########################
 # configure cloud address #
