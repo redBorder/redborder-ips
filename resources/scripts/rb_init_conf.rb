@@ -40,7 +40,7 @@ open("/etc/redborder/rb_init_conf.conf", "w") { |f|
 }
 
 # Apply config preparation
-system('systemctl stop chef-client &>/dev/null')
+#system('systemctl stop chef-client &>/dev/null')
 system('service snortd stop &>/dev/null') if File.exists?("/etc/rc.d/init.d/snortd")
 # TODO: /etc/sysconfig/network-scripts/ifcfg-* is needed?
 system('service kdump stop &>/dev/null')
@@ -227,8 +227,9 @@ unless network.nil? # network will not be defined in cloud deployments
 
   # Restart NetworkManager
   system('pkill dhclient &> /dev/null')
-  system('service network restart & &> /dev/null')
-  sleep 3
+  puts "Restarting the network.."
+  system('service network restart &> /dev/null')
+  sleep 10
 end
 
 # TODO: check network connectivity. Try to resolve repo.redborder.com
@@ -255,7 +256,7 @@ end
 # Upgrade system
 system('yum install systemd -y')
 
-system('systemctl start chef-client &>/dev/null') unless opt["r"]
+#system('systemctl start chef-client &>/dev/null') unless opt["r"]
 #TODO: check if needed: rm -f /boot/initrd*kdump.*
 system('service kdump start')
 
