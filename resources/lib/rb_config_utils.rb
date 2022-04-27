@@ -304,7 +304,7 @@ module Config_utils
     return segments
   end
 
-  def self.get_pf_ring_num_slots
+  def self.get_pf_ring_num_slots(num_segments)
     net_queues = `ls -d /sys/class/cpuid/* | wc -l`.strip.to_i
     mem_total = `cat /proc/meminfo |grep MemTotal|awk '{print $2}'`.strip.to_i
     mem_slots = 16384*1 # Default value

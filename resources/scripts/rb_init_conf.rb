@@ -50,7 +50,9 @@ system('service kdump stop &>/dev/null')
 # Configuration of /etc/modprobe.d/redBorder.conf
 #
 system('rm -f /etc/modprobe.d/redBorder.conf')
-mem_slots = Config_utils.get_pf_ring_num_slots
+
+num_segments = segments.nil? ? 0 : segments.count
+num_slots = Config_utils.get_pf_ring_num_slots(num_segments)
 pfring_bypass_interfaces = Config_utils.get_pf_ring_bypass_interfaces
 system('modinfo pf_ring | grep -q bypass_interfaces')
 if $?.success?
@@ -75,8 +77,8 @@ override ixgbe * weak-updates/ixgbe
 EOF
 
 `echo #{kmod_redborder_conf} > /etc/depmod.d/kmod-redBorder.conf`
-depmod
-modprobe pf_ring
+system('depmod')
+system('modprobe pf_ring')
 
 
 ####################
@@ -256,7 +258,7 @@ end
 # Upgrade system
 system('yum install systemd -y')
 
-system('systemctl start chef-client &>/dev/null') unless make_registration
+system('systemctl start chef-client &>/dev/null') unless opt["r"]
 #TODO: check if needed: rm -f /boot/initrd*kdump.*
 system('service kdump start')
 
