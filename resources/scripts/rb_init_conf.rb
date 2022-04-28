@@ -53,7 +53,7 @@ system('rm -f /etc/modprobe.d/redBorder.conf')
 
 num_segments = segments.nil? ? 0 : segments.count
 num_slots = Config_utils.get_pf_ring_num_slots(num_segments)
-pfring_bypass_interfaces = Config_utils.get_pf_ring_bypass_interfaces.empty? ? nil : Config_utils.get_pf_ring_bypass_interfaces
+pfring_bypass_interfaces = Config_utils.get_pf_ring_bypass_interfaces
 system('modinfo pf_ring | grep -q bypass_interfaces')
 if $?.success?
   `echo "options pf_ring enable_tx_capture=0 enable_frag_coherence=1 min_num_slots=#{num_slots} bypass_interfaces=#{pfring_bypass_interfaces.join(',')}" >> /etc/modprobe.d/redBorder.conf`
