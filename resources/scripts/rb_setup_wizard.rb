@@ -289,6 +289,7 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
+command_opts = ""
 command_opts = "-r" if make_registration
 command_opts += " -f" if opt["f"]
 command = "#{ENV['RBBIN']}/rb_init_conf #{command_opts}"
