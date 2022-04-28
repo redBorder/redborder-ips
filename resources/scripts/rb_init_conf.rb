@@ -19,12 +19,21 @@ require File.join(ENV['RBLIB'].nil? ? '/usr/lib/redborder/lib' : ENV['RBLIB'],'r
 RBETC = ENV['RBETC'].nil? ? '/etc/redborder' : ENV['RBETC']
 INITCONF="#{RBETC}/rb_init_conf.yml"
 
-opt = Getopt::Std.getopts("hr")
+def local_tty_warning_wizard
+  puts "[!] Error: This device must be configured under local tty"
+  exit 1
+end
+
+opt = Getopt::Std.getopts("hrf")
 if opt["h"] 
   printf "rb_init_conf [-r] \n"
   printf "    -r                -> register sensor with manager\n"
+  printf "    -f                -> force configure in non local tty\n"
   exit 1
 end
+
+# Run the wizard only in local tty
+local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
 
 init_conf = YAML.load_file(INITCONF)
 
@@ -53,7 +62,7 @@ system('rm -f /etc/modprobe.d/redBorder.conf')
 
 num_segments = segments.nil? ? 0 : segments.count
 num_slots = Config_utils.get_pf_ring_num_slots(num_segments)
-pfring_bypass_interfaces = Config_utils.get_pf_ring_bypass_interfaces.empty? ? nil : Config_utils.get_pf_ring_bypass_interfaces
+pfring_bypass_interfaces = Config_utils.get_pf_ring_bypass_interfaces
 system('modinfo pf_ring | grep -q bypass_interfaces')
 if $?.success?
   `echo "options pf_ring enable_tx_capture=0 enable_frag_coherence=1 min_num_slots=#{num_slots} bypass_interfaces=#{pfring_bypass_interfaces.join(',')}" >> /etc/modprobe.d/redBorder.conf`
@@ -233,6 +242,11 @@ unless network.nil? # network will not be defined in cloud deployments
 end
 
 # TODO: check network connectivity. Try to resolve repo.redborder.com
+
+unless Config_utils.has_internet?
+  puts "[!] Error: Trying to resolv repo.redborder.com failed. Please check your network settings or contact your system administrator."
+  exit 1
+end
 
 
 ####################

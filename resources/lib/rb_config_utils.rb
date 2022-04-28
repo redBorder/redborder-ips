@@ -347,6 +347,21 @@ module Config_utils
     return pf_ring_bypass_interfaces
   end
 
+  def self.is_local_tty
+    system('tty | egrep -q "/dev/tty[S0-9][0-9]*"')
+    return $?.success?      
+  end
+
+  def self.has_internet?
+    require "resolv"
+    dns_resolver = Resolv::DNS.new()
+    begin
+      dns_resolver.getaddress("repo.redborder.com")
+      return true
+    rescue Resolv::ResolvError => e
+      return false
+    end
+  end
 end
 
 ## vim:ts=4:sw=4:expandtab:ai:nowrap:formatoptions=croqln:
