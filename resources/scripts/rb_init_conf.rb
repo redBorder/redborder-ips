@@ -19,12 +19,21 @@ require File.join(ENV['RBLIB'].nil? ? '/usr/lib/redborder/lib' : ENV['RBLIB'],'r
 RBETC = ENV['RBETC'].nil? ? '/etc/redborder' : ENV['RBETC']
 INITCONF="#{RBETC}/rb_init_conf.yml"
 
-opt = Getopt::Std.getopts("hr")
+def local_tty_warning_wizard
+  puts "[!] Error: This device must be configured under local tty"
+  exit 1
+end
+
+opt = Getopt::Std.getopts("hrf")
 if opt["h"] 
   printf "rb_init_conf [-r] \n"
   printf "    -r                -> register sensor with manager\n"
+  printf "    -f                -> force configure in non local tty\n"
   exit 1
 end
+
+# Run the wizard only in local tty
+local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
 
 init_conf = YAML.load_file(INITCONF)
 

@@ -212,7 +212,7 @@ unless init_conf_cloud_address.nil?
     dialog.title = "Confirm configuration"
     text = <<EOF
 
-Your IPS was registered already, do you want to register again?
+There was a previous wizard execution and your IPS may had been registered already, do you want to register again?
 
 EOF
     make_registration = dialog.yesno(text,0,0)
