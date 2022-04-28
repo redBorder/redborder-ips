@@ -3,14 +3,23 @@
 require 'json'
 require 'mrdialog'
 require 'yaml'
+require 'getopt/std'
 require "#{ENV['RBLIB']}/rb_wiz_lib"
 require "#{ENV['RBLIB']}/rb_config_utils.rb"
 
-CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
+CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml" unless CONFFILE
 DIALOGRC = "#{ENV['RBETC']}/dialogrc"
 if File.exist?(DIALOGRC)
     ENV['DIALOGRC'] = DIALOGRC
 end
+
+opt = Getopt::Std.getopts("f")
+
+# Load old configuration if any
+init_conf = YAML.load_file(CONFFILE) rescue nil
+init_conf_cloud_address = init_conf['cloud_address'] rescue nil
+init_conf_network = init_conf['network'] rescue nil
+init_conf_segments = init_conf['segments'] || [] rescue []
 
 def cancel_wizard()
 
@@ -29,6 +38,32 @@ EOF
     exit(1)
 
 end
+
+def local_tty_warning_wizard()
+
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "SETUP wizard cancelled"
+
+    text = <<EOF
+
+This device must be configured under local tty.
+
+If you want to complete the setup wizard, please execute it again in a local tty.
+
+EOF
+    result = dialog.msgbox(text, 11, 41)
+    exit(1)
+
+end
+
+# Run the wizard only in local tty
+local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
+
+
+# init
+puts "Getting data. Please wait ... "
+Config_utils.net_init_bypass
 
 puts "\033]0;redborder - setup wizard\007"
 
@@ -86,15 +121,20 @@ dialog.clear = true
 dialog.title = "Configure Network"
 dialog.cancel_label = "SKIP"
 dialog.no_label = "SKIP"
-yesno = dialog.yesno(text,0,0)
+yesno = (init_conf_network.nil? or init_conf_network['interfaces'].empty?) ? true : dialog.yesno(text,0,0)
 
 if yesno # yesno is "yes" -> true
 
     # Conf for network
     netconf = NetConf.new
-    netconf.doit # launch wizard
-    cancel_wizard if netconf.cancel
-    general_conf["network"]["interfaces"] = netconf.conf
+    loop do
+        netconf.segments = init_conf_segments
+        netconf.doit # launch wizard
+        cancel_wizard and break if netconf.cancel
+        general_conf["network"]["interfaces"] = netconf.conf
+        break unless general_conf["network"]["interfaces"].empty?
+    end
+
 
     # Conf for DNS
     text = <<EOF
@@ -130,12 +170,12 @@ end
 # Conf network segments
 segments_conf = SegmentsConf.new
 
-# Get segments and management interface from the rb_init_conf.yml if exists
-if File.exists?(CONFFILE)   
-    init_conf = YAML.load_file(CONFFILE)
-    segments_conf.segments = init_conf["segments"] rescue []
-    segments_conf.management_interface = init_conf["network"]["interfaces"].first["device"] rescue nil
+# Get segments and management interface from the old configuration
+# If there is only one interfaces this is for sure the management
+if general_conf["network"]["interfaces"].count  == 1
+  segments_conf.management_interface = general_conf["network"]["interfaces"].first
 end
+segments_conf.segments = Config_utils.net_segment_autoassign_bypass(init_conf_segments, segments_conf.management_interface) rescue []
 
 # Get actual managment interface if user just set
 unless general_conf["network"]["interfaces"].empty? # meaning the user did not skip network configuration
@@ -145,18 +185,50 @@ end
 
 segments_conf.doit # launch wizard
 cancel_wizard if segments_conf.cancel
-general_conf["segments"] = segments_conf.conf
+general_conf["segments"] = segments_conf.conf rescue nil
+general_conf["segments"] = nil if general_conf["segments"] and general_conf["segments"].empty?
 
-###############################
-# CLOUD ADDRESS CONFIGURATION #
-###############################
+# For each segment interfaces we need to remove it from the general_conf["network"]["interfaces"] so
+# it doesnt end as part of a segment and  as managmenet interface
+unless general_conf["segments"].nil?
+    general_conf["segments"].each do |segment|
+        general_conf["network"]["interfaces"].delete_if{ |interface| segment["ports"].include? interface["device"]}
+    end
+end
+# Add the deleted segments to the general_conf["network"]["interfaces"] so it stays configure as dhcp
+segments_conf.deleted_segments.each do |segment|
+    segment["ports"].each do |port|
+        general_conf["network"]["interfaces"].push({"mode" => "dhcp", "device" => "#{port}"})
+    end
+end
 
-# Conf for hostname and domain
-cloud_address_conf = CloudAddressConf.new
-cloud_address_conf.doit # launch wizard
-cancel_wizard if cloud_address_conf.cancel
-general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+################
+# Registration #
+################
+make_registration = true
+unless init_conf_cloud_address.nil?
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Confirm configuration"
+    text = <<EOF
 
+There was a previous wizard execution and your IPS may had been registered already, do you want to register again?
+
+EOF
+    make_registration = dialog.yesno(text,0,0)
+end
+
+if make_registration 
+    ###############################
+    # CLOUD ADDRESS CONFIGURATION #
+    ###############################
+
+    # Conf for hostname and domain
+    cloud_address_conf = CloudAddressConf.new
+    cloud_address_conf.doit # launch wizard
+    cancel_wizard if cloud_address_conf.cancel
+    general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+end
 
 ###############################
 #     BUILD DESCRIPTION       #
@@ -185,21 +257,23 @@ unless general_conf["network"]["interfaces"].empty?
     end
 end
 
-unless general_conf["network"]["dns"].nil?
+unless general_conf["network"]["dns"].nil? or general_conf["network"]["dns"].empty?
     text += "- DNS:\n"
     general_conf["network"]["dns"].each do |dns|
         text += "    #{dns}\n"
     end
 end
 
-unless general_conf["segments"].nil?
-    text += "- SEGMENTS:\n"
+unless general_conf["segments"].nil? or general_conf["segments"].empty?
+    text += "- Segments:\n"
     general_conf["segments"].each do |s|
         text += "    name: #{s["name"]} | ports: #{s["ports"]} | bypass_support: #{s["bypass_support"]}\n"
     end
 end
 
-text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
+text += "\n- Make Registration: #{make_registration}\n"
+
+text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
 
 text += "\nPlease, is this configuration ok?\n \n"
 
@@ -215,7 +289,12 @@ end
 File.open(CONFFILE, 'w') {|f| f.write general_conf.to_yaml } #Store
 
 #exec("#{ENV['RBBIN']}/rb_init_conf.sh")
-command = "#{ENV['RBBIN']}/rb_init_conf"
+command_opts = ""
+command_opts = "-r" if make_registration
+command_opts += " -f" if opt["f"]
+command = "#{ENV['RBBIN']}/rb_init_conf #{command_opts}"
+
+
 
 dialog = MRDialog.new
 dialog.clear = false

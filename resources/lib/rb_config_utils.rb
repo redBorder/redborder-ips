@@ -229,6 +229,139 @@ module Config_utils
        return true
    end
 
+  # Function to start bpctl if the machine support it
+  def self.net_init_bypass
+    return true if File.exists?("/dev/bpctl")
+
+    # trying to initialize bypass module controller
+    system("/usr/bin/bpctl_start &>/dev/null")
+    return File.exists?("/dev/bpctl") # True/False depending if there is no bypass hardware
+  end
+
+  # Functions that tells you if an interfaces has bypass support or not
+  def self.net_get_device_bypass_support(interface)
+    return false unless File.exists?("/dev/bpctl")
+
+    # There is a hardware bypass device loaded
+    system("bpctl_util #{interface} is_bypass | grep -q -i \"The interface is not Bypass-SD/TAP-SD device\"")
+    return !$?.success?
+  end
+
+  def self.net_get_device_bypass_master(interface)
+    return false unless net_get_device_bypass_support(interface)
+    system("bpctl_util #{interface} get_bypass_slave | grep -q -i \"The interface is a slave interface\"")
+    return !$?.success?
+  end
+
+  # Get real mac of interface
+  def self.net_get_real_mac(interface) 
+    system("ip a s #{interface} | egrep -q \"bond\"")
+    return system("cat /sys/class/net/#{interface}/address") unless $?.success?
+    
+    #this iface belongs to a bonding
+    interface_bond=system("ip a s dev #{interface}|grep bond|tr ' ' '\n'|grep bond|head -n 1")
+    return system("grep -A 10 \"Slave Interface: #{interface}\" /proc/net/bonding/#{interface_bond} | grep \"Permanent HW addr:\" | head -n 1 | awk '{print $4}'")
+  end
+
+  # return true if the interface is slave; if not returns the mac adress of the slave interface
+  def self.net_get_device_bypass_slave(interface)
+    if net_get_device_bypass_support(interface)
+        system("bpctl_util #{interface} get_bypass_slave | grep -q -i \"The interface is a slave interface\"")
+        return interface if $?.success?
+        return `bpctl_util #{interface} get_bypass_slave | grep \"^slave: \" | awk '{print $3}'`.strip
+    else
+        return false
+    end
+  end
+
+  # Function that returns the bypass master interface from the list we pass
+  def self.net_port_get_bypass_master(net_dev_list)
+    master_list = []
+    net_dev_list.each do |netdev|
+       master_list.push(netdev) if net_get_device_bypass_master(netdev)
+    end
+    return master_list
+  end
+
+  # TODO: DNA stuff related
+  def self.net_segment_autoassign_bypass(segments = [], management_interface = "")
+    segments = [] unless segments
+    net_dev_list = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+    net_ports_bypass_master_list = net_port_get_bypass_master(net_dev_list)
+    net_ports_bypass_master_list.each do |index_master|
+      next if index_master == management_interface
+      next unless segments.select{|segment| segment.key?"ports" and segment["ports"].include? index_master}.empty?
+      index_slave = net_get_device_bypass_slave(index_master)
+      next if index_slave == management_interface
+      next unless segments.select{|segment| segment.key?"ports" and segment["ports"].include? index_slave}.empty?
+      bypass_segments = segments.select{|s| s.name.start_with?"bp"} rescue []
+      segment = {}
+      segment["name"] = "bpbr" + (bypass_segments.count > 0 ? bypass_segments.count.to_s : 0.to_s)
+      segment["ports"] = "#{index_master} #{index_slave}".split(" ")
+      segment['bypass_support'] = true
+      segments.push(segment)
+    end
+    return segments
+  end
+
+  def self.get_pf_ring_num_slots(num_segments)
+    net_queues = `ls -d /sys/class/cpuid/* | wc -l`.strip.to_i
+    mem_total = `cat /proc/meminfo |grep MemTotal|awk '{print $2}'`.strip.to_i
+    mem_slots = 16384*1 # Default value
+    if mem_total > 32000000
+      mem_slots = 16384*1 # 16k
+    elsif mem_total > 64000000 
+      if num_segments == 1
+        num_slots = 16384*4 # 64k
+      elsif num_segments == 2
+        num_slots = 16384*2 # 32k
+      elsif num_segments == 3
+        num_slots = 16384*2 # 32k
+      else #>= 4 segments
+        num_slots = 16384*1 # 16k
+      end
+    else # >= 64Gbytes
+      if num_segments == 1 
+        num_slots = 16384*8 #128k
+      elsif num_segments < 4
+        num_slots = 16384*4 #64k
+      else
+        num_slots = 16384*2 #32k
+      end
+    end
+
+    if num_slots > 16384 and net_queues > 8
+      num_slots = num_slots / 2
+    end
+    return num_slots
+  end
+
+  def self.get_pf_ring_bypass_interfaces
+    pf_ring_bypass_interfaces = []
+    listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+    listnetdev.each do |netdev|
+        # loopback and devices with no pci nor mac are not welcome!
+        next if netdev == "lo"
+        pf_ring_bypass_interfaces.push(netdev) if Config_utils.net_get_device_bypass_support(netdev)
+    end
+    return pf_ring_bypass_interfaces
+  end
+
+  def self.is_local_tty
+    system('tty | egrep -q "/dev/tty[S0-9][0-9]*"')
+    return $?.success?      
+  end
+
+  def self.has_internet?
+    require "resolv"
+    dns_resolver = Resolv::DNS.new()
+    begin
+      dns_resolver.getaddress("repo.redborder.com")
+      return true
+    rescue Resolv::ResolvError => e
+      return false
+    end
+  end
 end
 
 ## vim:ts=4:sw=4:expandtab:ai:nowrap:formatoptions=croqln:
