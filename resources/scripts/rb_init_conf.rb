@@ -234,6 +234,11 @@ end
 
 # TODO: check network connectivity. Try to resolve repo.redborder.com
 
+unless Config_utils.has_internet?
+  puts "[!] Error: Trying to resolv repo.redborder.com failed. Please check your network settings or contact your system administrator."
+  exit 1
+end
+
 
 ####################
 # Set UTC timezone #

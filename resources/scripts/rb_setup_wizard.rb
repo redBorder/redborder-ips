@@ -3,6 +3,7 @@
 require 'json'
 require 'mrdialog'
 require 'yaml'
+require 'getopt/std'
 require "#{ENV['RBLIB']}/rb_wiz_lib"
 require "#{ENV['RBLIB']}/rb_config_utils.rb"
 
@@ -12,11 +13,14 @@ if File.exist?(DIALOGRC)
     ENV['DIALOGRC'] = DIALOGRC
 end
 
+opt = Getopt::Std.getopts("f")
+
 # Load old configuration if any
 init_conf = YAML.load_file(CONFFILE) rescue nil
 init_conf_cloud_address = init_conf['cloud_address'] rescue nil
 init_conf_network = init_conf['network'] rescue nil
 init_conf_segments = init_conf['segments'] || [] rescue []
+
 def cancel_wizard()
 
     dialog = MRDialog.new
@@ -34,6 +38,28 @@ EOF
     exit(1)
 
 end
+
+def local_tty_warning_wizard()
+
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "SETUP wizard cancelled"
+
+    text = <<EOF
+
+This device must be configured under local tty.
+
+If you want to complete the setup wizard, please execute it again in a local tty.
+
+EOF
+    result = dialog.msgbox(text, 11, 41)
+    exit(1)
+
+end
+
+# Run the wizard only in local tty
+local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
+
 
 # init
 puts "Getting data. Please wait ... "
