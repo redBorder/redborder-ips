@@ -344,7 +344,14 @@ module Config_utils
     listnetdev.each do |netdev|
         # loopback and devices with no pci nor mac are not welcome!
         next if netdev == "lo"
-        pf_ring_bypass_interfaces.push(netdev) if Config_utils.net_get_device_bypass_support(netdev)
+        if Config_utils.net_get_device_bypass_support(netdev) and Config_utils.net_get_device_bypass_master(netdev)
+          netdev_slave = Config_utils.net_get_device_bypass_slave(netdev)
+          # order matters need to have the slave first
+          if netdev_slave and listnetdev.include?netdev_slave
+            pf_ring_bypass_interfaces.push(netdev_slave)
+            pf_ring_bypass_interfaces.push(netdev) 
+          end
+        end
     end
     return pf_ring_bypass_interfaces
   end
