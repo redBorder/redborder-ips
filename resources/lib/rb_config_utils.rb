@@ -296,7 +296,8 @@ module Config_utils
       next unless segments.select{|segment| segment.key?"ports" and segment["ports"].include? index_slave}.empty?
       bypass_segments = segments.select{|s| s.name.start_with?"bp"} rescue []
       segment = {}
-      segment["name"] = "bpbr" + (bypass_segments.count > 0 ? bypass_segments.count.to_s : 0.to_s)
+      #segment["name"] = "bpbr" + (bypass_segments.count > 0 ? bypass_segments.count.to_s : 0.to_s)
+      segment["name"] = "bpbr" + (segments.count > 0 ? segments.count.to_s : 0.to_s)
       segment["ports"] = "#{index_master} #{index_slave}".split(" ")
       segment['bypass_support'] = true
       segments.push(segment)
@@ -308,6 +309,7 @@ module Config_utils
     net_queues = `ls -d /sys/class/cpuid/* | wc -l`.strip.to_i
     mem_total = `cat /proc/meminfo |grep MemTotal|awk '{print $2}'`.strip.to_i
     mem_slots = 16384*1 # Default value
+    num_slots = 16384*1 # 16k Default value
     if mem_total > 32000000
       mem_slots = 16384*1 # 16k
     elsif mem_total > 64000000 
