@@ -371,6 +371,38 @@ module Config_utils
       return false
     end
   end
+
+  def self.get_pether_status(pether)
+    if File.exists?"/sys/class/net/#{pether}/operstate"
+      pether_status=`cat /sys/class/net/#{pether}/operstate`.strip
+    else
+      pether_status="unkn"
+    end
+
+    return pether_status
+  end
+  
+  def self.get_pether_speed(pether)
+    pether_speed="unkn"
+    
+    if File.exists?"/sys/class/net/#{pether}/speed"
+      pether_speed=`cat /sys/class/net/#{pether}/speed 2>/dev/null`.strip
+    end
+    
+    pether_speed="unkn" if pether_speed.nil? or pether_speed.empty?
+    return pether_speed
+  end
+
+  def self.get_pether_duplex(pether)
+    pether_duplex="unkn"
+    
+    if File.exists?"/sys/class/net/#{pether}/duplex"
+      pether_duplex=`cat /sys/class/net/#{pether}/duplex 2>/dev/null`.strip
+    end
+    pether_duplex="unkn" if pether_duplex.nil? or pether_duplex.empty?
+    return pether_duplex
+  end
+
 end
 
 ## vim:ts=4:sw=4:expandtab:ai:nowrap:formatoptions=croqln:

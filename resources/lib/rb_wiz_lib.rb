@@ -318,6 +318,131 @@ EOF
 
 end
 
+class PortConf < WizConf
+
+    attr_accessor :segments, :conf, :cancel
+
+    def initialize
+        @cancel = false
+        @segments = []
+        @conf = {}
+    end
+
+    def doit
+        dialog = MRDialog.new
+        dialog.clear = true
+        dialog.title = "PORTS INFORMATION"
+        dialog.logger = Logger.new(LOGFILE)
+        loop do
+            text = <<EOF
+
+Port Network configuration menu:
+
+EOF
+
+            text += "Segments: \n"
+            segments.each do |segment|
+                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
+            end
+            text += "\n"
+       
+            text += "Ethernet: \n"
+            items = []
+            menu_data = Struct.new(:tag, :item)
+            data = menu_data.new
+            # loop over list of net devices
+            listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
+            listnetdev.each do |netdev|
+                # loopback and devices with no pci nor mac are not welcome!
+                next if netdev == "lo"
+                netdevprop = netdev_property(netdev)
+                next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
+                # Take out segments
+                next if segments and !segments.select{|segment| segment["name"] == netdev}.empty?
+
+                text += "- #{netdev}"
+                text += " | Mode Port: #{Config_utils.get_pether_speed(netdev)}/#{Config_utils.get_pether_duplex(netdev)} "
+                text += " | MAC Address: #{netdevprop["MAC"]} "
+                text += " | Status: #{Config_utils.get_pether_status(netdev)} \n"
+
+                data.tag = netdev
+                data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                items.push(data.to_a)
+            end
+            text += "\n"
+            text +=" Please, choose a network device to perform port identification: \n"
+            text += "\n"
+            data.tag = "Finalize"
+            data.item = "Finalize port network identification"
+            items.push(data.to_a)
+            height = 0
+            width = 0
+            menu_height = 4
+            selected_item = dialog.menu(text, items, height, width, menu_height)
+
+            exit_code = dialog.exit_code
+
+            dialog.logger.debug("Exit code: #{exit_code}")
+
+            if selected_item
+                unless selected_item == "Finalize"
+                    netdev = selected_item
+                    dialog = MRDialog.new
+                    dialog.clear = true
+                    text = <<EOF
+
+Port Blinking for identification (#{netdev}).  \n
+Please set the time for blinking.
+EOF
+                    
+                    items = []
+                    form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen, :attr)
+
+                    items = []
+                    label = "Seconds:"
+                    data = form_data.new
+                    data.label = label
+                    data.ly = 1
+                    data.lx = 1
+                    data.item = 30
+                    data.iy = 1
+                    data.ix = 10
+                    data.flen = 253
+                    data.ilen = 0
+                    data.attr = 0
+                    items.push(data.to_a)
+
+                    dialog.title = "Blinking in seconds"
+                    seconds = dialog.mixedform(text, items, 24, 60, 0)
+                    seconds = seconds.to_i rescue 30
+                    
+                    dialog = MRDialog.new
+                    dialog.clear = true
+                    dialog.title = "Port blinking"
+                    description="The port should be blinking for #{seconds} seconds."
+                    height = 20
+                    width = 70
+                    percent = 0
+                    dialog.progressbox(description,height, width) do |f| 
+                        system("ethtool -p #{netdev} #{seconds} &")
+                        for second in 1..seconds 
+                            f.puts "Blinking port #{netdev} for #{second} seconds.."
+                            sleep 1
+                        end
+                    end
+                    
+                    break
+                end
+            else
+                # Cancel pressed
+                @cancel = true
+                break
+            end
+
+        end # loop
+    end # doit
+end
+
 class SegmentsConf < WizConf
 
     attr_accessor :segments, :deleted_segments, :management_interface, :conf, :cancel
@@ -354,8 +479,11 @@ EOF
                 text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
             end
             text += "\n"
+
+            data.tag = "Info"
+            data.item = "Display ports configuration"
+            items.push(data.to_a)
             
-            # TODO: force bypass option
             data.tag = "Force bypass"
             data.item = "Force bypass auto assign"
             items.push(data.to_a)
@@ -383,6 +511,11 @@ EOF
             case selected_item
             when "Finalize"
                 break
+            when "Info"
+                port_conf = PortConf.new
+                port_conf.segments = @segments
+                port_conf.doit
+
             when "Force bypass"
                 #TODO
                 @segments = Config_utils.net_segment_autoassign_bypass(segments, management_interface)
