@@ -394,6 +394,10 @@ module Config_utils
     return pether_duplex
   end
 
+  def sef.ipmi_capable?
+    returnn File.exists?"/dev/ipmi0"
+  end
+
 end
 
 ## vim:ts=4:sw=4:expandtab:ai:nowrap:formatoptions=croqln:
