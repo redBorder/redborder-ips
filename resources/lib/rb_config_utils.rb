@@ -307,9 +307,9 @@ module Config_utils
   def self.get_pf_ring_num_slots(num_segments)
     net_queues = `ls -d /sys/class/cpuid/* | wc -l`.strip.to_i
     mem_total = `cat /proc/meminfo |grep MemTotal|awk '{print $2}'`.strip.to_i
-    mem_slots = 16384*1 # Default value
+    mum_slots = 16384*1 # Default value
     if mem_total > 32000000
-      mem_slots = 16384*1 # 16k
+      mum_slots = 16384*1 # 16k
     elsif mem_total > 64000000 
       if num_segments == 1
         num_slots = 16384*4 # 64k
@@ -394,8 +394,22 @@ module Config_utils
     return pether_duplex
   end
 
-  def sef.ipmi_capable?
-    returnn File.exists?"/dev/ipmi0"
+  def self.ipmi_capable?
+    return File.exists?"/dev/ipmi0"
+  end
+
+  def self.get_ipmi_properties
+    net_ipmi_ip=`ipmitool lan print 1| egrep "^IP Address[ ]*:" | awk -F : '{print $2}' | sed 's/ //g'`.strip
+    net_ipmi_netmask=`ipmitool lan print 1| egrep "^Subnet Mask[ ]*:" | awk -F : '{print $2}' | sed 's/ //g'`.strip
+    if !Config_utils.check_ipv4({:ip => net_ipmi_ip}) and !Config_utils.check_ipv4({:netmask => net_ipmi_netmask})
+      net_ipmi_ip = "" 
+      net_ipmi_netmask = ""
+    end
+    
+    net_ipmi_gateway=`ipmitool lan print 1| egrep "^Default Gateway IP[ ]*:" | awk -F : '{print $2}' | sed 's/ //g'`.strip
+    net_ipmi_gateway = "" unless Config_utils.check_ipv4({:ip => net_ipmi_gateway})
+    
+    return { :ip => net_ipmi_ip, :netmask => net_ipmi_netmask, :gateway => net_ipmi_gateway}
   end
 
 end

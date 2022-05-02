@@ -318,6 +318,122 @@ EOF
 
 end
 
+# Class to create a Network configuration box
+class IpmiConf < WizConf
+
+    attr_accessor :conf, :cancel
+
+    def initialize()
+        @cancel = false
+        @conf = {}
+    end
+
+    def doit
+       
+        dialog = MRDialog.new
+        dialog.clear = true
+        text = <<EOF
+
+You are about to configure the IPMI. It has the following propierties:
+EOF
+        ipmi_properties = Config_utils.get_ipmi_properties
+
+        text += " \n"
+        text += `ipmitool lan print 1`.strip
+        text += " \n"
+
+        @conf['IP:'] = ipmi_properties[:ip] if @conf['IP:'].nil?
+        @conf['Netmask:'] = ipmi_properties[:netmask] if @conf['Netmask:'].nil?
+        @conf['Gateway:'] = ipmi_properties[:gateway] if @conf['Gateway:'].nil?
+
+        flen = 20
+        form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen)
+
+        loop do
+            items = []
+            label = "IP:"
+            data = form_data.new
+            data.label = label
+            data.ly = 1
+            data.lx = 1
+            data.item = @conf[label]
+            data.iy = 1
+            data.ix = 10
+            data.flen = flen
+            data.ilen = 0
+            items.push(data.to_a)
+
+            label = "Netmask:"
+            data = form_data.new
+            data.label = label
+            data.ly = 2
+            data.lx = 1
+            data.item = @conf[label]
+            data.iy = 2
+            data.ix = 10
+            data.flen = flen
+            data.ilen = 0
+            items.push(data.to_a)
+
+            label = "Gateway:"
+            data = form_data.new
+            data.label = label
+            data.ly = 3
+            data.lx = 1
+            data.item = @conf[label]
+            data.iy = 3
+            data.ix = 10
+            data.flen = flen
+            data.ilen = 0
+            items.push(data.to_a)
+
+            dialog.title = "IPMI configuration"
+            @conf = dialog.form(text, items, 20, 60, 0)
+
+            # need to check result
+            ret = true
+            if @conf.empty?
+                # Cancel was pressed
+                break
+            else
+                # ok pressed
+                if Config_utils.check_ipv4({:ip => @conf['IP:']}) and Config_utils.check_ipv4({:netmask => @conf['Netmask:']})
+                    # seems to be ok
+                    unless @conf['Gateway:'] == ""
+                        if Config_utils.check_ipv4({:ip => @conf['Gateway:']})
+                            # seems to be ok
+                            ret = false
+                        end
+                    else
+                        ret = false
+                    end
+                else
+                    # error!
+                    ret = true
+                end
+            end
+            if ret
+                # error detected
+                dialog = MRDialog.new
+                dialog.clear = true
+                dialog.title = "ERROR in IPMI network configuration"
+                text = <<EOF
+
+We have detected an error in IPMI network configuration.
+
+Please, review IP/Netmask and/or Gateway address configuration.
+EOF
+                dialog.msgbox(text, 10, 41)
+            else
+                # all it is ok, breaking loop
+                break
+            end
+        end
+
+    end #doit
+
+end
+
 class PortConf < WizConf
 
     attr_accessor :segments, :conf, :cancel

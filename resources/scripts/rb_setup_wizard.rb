@@ -164,6 +164,40 @@ EOF
 end
 
 ##########################
+# IPMI    CONFIGURATION  #
+##########################
+if 1==1 or Config_utils.ipmi_capable?
+    text = <<EOF
+
+Next, you will be able to configure IPMI settings. If you have
+the IPMI configured manually, you can "SKIP" this step and go
+to the next step.
+
+Please, Select an option.
+
+EOF
+
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Configure IPMI"
+    dialog.cancel_label = "SKIP"
+    dialog.no_label = "SKIP"
+    yesno = dialog.yesno(text,0,0)
+
+    if yesno # yesno is "yes" -> true
+
+        # Conf for ipmi
+        ipmiconf = IpmiConf.new
+        loop do
+            ipmiconf.doit # launch wizard
+            cancel_wizard and break if ipmiconf.cancel
+            general_conf["ipmi"] = ipmiconf.conf
+            break unless general_conf["ipmi"].empty?
+        end
+
+    end
+end
+##########################
 # SEGMENTS CONFIGURATION #
 ##########################
 
