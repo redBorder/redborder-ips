@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU Affero General Public License License
 # along with redBorder. If not, see <http://www.gnu.org/licenses/>.
 #######################################################################
-source /etc/profile
 
 # functions library for barnyard2 and snort initscripts
+
 function get_bridge() {
 
     local bridgeif=""
@@ -82,10 +82,10 @@ f_set_updown_br_or_bp() {
 
             if [ "x${bpbr_mode}" == "xon" ]; then
                 #stop
-                ${RBDIR}/bin/rb_bypass.sh -b ${ifbr} -g | grep -q "The interface is in the non-Bypass mode"
+                /usr/lib/redborder/bin/rb_bypass.sh -b ${ifbr} -g | grep -q "The interface is in the non-Bypass mode"
                 if [ $? -eq 0 ]; then
                     echo -n "Enabling bypass on ${ifbr}:"
-                    ${RBDIR}/bin/rb_bypass.sh -b ${ifbr} -s on &>/dev/null
+                    /usr/lib/redborder/bin/rb_bypass.sh -b ${ifbr} -s on &>/dev/null
                     print_result 0
                 fi
             else
@@ -95,18 +95,18 @@ f_set_updown_br_or_bp() {
                         echo "Disabling bypass on ${ifbr} not applied: this action must be done manually."
                     else
                         # AUTOBYPASS is active ... disabling bypass only if it is enabled (on)
-                        ${RBDIR}/bin/rb_bypass.sh -b ${ifbr} -g | grep -q "The interface is in the Bypass mode"
+                        /usr/lib/redborder/bin/rb_bypass.sh -b ${ifbr} -g | grep -q "The interface is in the Bypass mode"
                         if [ $? -eq 0 ]; then
                             echo -n "Disabling bypass on ${ifbr}:"
-                            ${RBDIR}/bin/rb_bypass.sh -b ${ifbr} -s off &>/dev/null
+                            /usr/lib/redborder/bin/rb_bypass.sh -b ${ifbr} -s off &>/dev/null
                             print_result 0
                         fi
                     fi
                 else
-                    ${RBDIR}/bin/rb_bypass.sh -b ${ifbr} -g | grep -q "The interface is in the Bypass mode"
+                    /usr/lib/redborder/bin/rb_bypass.sh -b ${ifbr} -g | grep -q "The interface is in the Bypass mode"
                     if [ $? -eq 0 ]; then
                         echo -n "Disabling bypass on ${ifbr}:"
-                        ${RBDIR}/bin/rb_bypass.sh -b ${ifbr} -s off &>/dev/null
+                        /usr/lib/redborder/bin/rb_bypass.sh -b ${ifbr} -s off &>/dev/null
                         print_result 0
                     fi
                 fi
