@@ -527,7 +527,7 @@ EOF
 
                     dialog.title = "Blinking in seconds"
                     seconds = dialog.mixedform(text, items, 24, 60, 0)
-                    seconds = seconds.to_i rescue 30
+                    seconds = seconds["Seconds:"].to_i rescue 30
                     
                     dialog = MRDialog.new
                     dialog.clear = true
