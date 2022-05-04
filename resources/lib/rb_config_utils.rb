@@ -311,7 +311,7 @@ module Config_utils
     mem_slots = 16384*1 # Default value
     num_slots = 16384*1 # 16k Default value
     if mem_total > 32000000
-      mum_slots = 16384*1 # 16k
+      num_slots = 16384*1 # 16k
     elsif mem_total > 64000000 
       if num_segments == 1
         num_slots = 16384*4 # 64k
