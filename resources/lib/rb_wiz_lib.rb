@@ -329,18 +329,10 @@ class IpmiConf < WizConf
     end
 
     def doit
-       
         dialog = MRDialog.new
         dialog.clear = true
-        text = <<EOF
 
-You are about to configure the IPMI. It has the following propierties:
-EOF
         ipmi_properties = Config_utils.get_ipmi_properties
-
-        text += " \n"
-        text += `ipmitool lan print 1`.strip
-        text += " \n"
 
         @conf['IP:'] = ipmi_properties[:ip] if @conf['IP:'].nil?
         @conf['Netmask:'] = ipmi_properties[:netmask] if @conf['Netmask:'].nil?
@@ -350,6 +342,10 @@ EOF
         form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen)
 
         loop do
+            text = <<EOF
+
+You are about to configure the IPMI. It has the following propierties:
+EOF
             items = []
             label = "IP:"
             data = form_data.new
@@ -394,6 +390,7 @@ EOF
             ret = true
             if @conf.empty?
                 # Cancel was pressed
+                #@cancel = true
                 break
             else
                 # ok pressed
@@ -429,7 +426,7 @@ EOF
                 break
             end
         end
-
+        
     end #doit
 
 end

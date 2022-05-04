@@ -188,13 +188,13 @@ EOF
 
         # Conf for ipmi
         ipmiconf = IpmiConf.new
-        loop do
-            ipmiconf.doit # launch wizard
-            cancel_wizard and break if ipmiconf.cancel
-            general_conf["ipmi"] = ipmiconf.conf
-            break unless general_conf["ipmi"].empty?
-        end
+        ipmiconf.doit # launch wizard
 
+        general_conf["ipmi"] = {}
+        general_conf["ipmi"]["ip"] = ipmiconf.conf["IP:"] if !ipmiconf.conf.empty? and ipmiconf.conf["IP:"]
+        general_conf["ipmi"]["netmask"] = ipmiconf.conf["Netmask:"] if !ipmiconf.conf.empty? and ipmiconf.conf["Netmask:"]
+        general_conf["ipmi"]["gateway"] = ipmiconf.conf["Gateway:"] if !ipmiconf.conf.empty? and ipmiconf.conf["Gateway:"]
+        
     end
 end
 ##########################
@@ -297,6 +297,14 @@ unless general_conf["network"]["dns"].nil? or general_conf["network"]["dns"].emp
         text += "    #{dns}\n"
     end
 end
+
+unless general_conf["ipmi"].nil? or general_conf["ipmi"].empty?
+    text += "- IPMI Network Configuration:\n"
+    text += "Ip: #{general_conf['ipmi']['ip']}\n"
+    text += "Netmask: #{general_conf['ipmi']['netmask']}\n"
+    text += "Gateway: #{general_conf['ipmi']['gateway']}\n"
+end
+
 
 unless general_conf["segments"].nil? or general_conf["segments"].empty?
     text += "- Segments:\n"
