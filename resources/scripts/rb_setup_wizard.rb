@@ -164,6 +164,40 @@ EOF
 end
 
 ##########################
+# IPMI    CONFIGURATION  #
+##########################
+if 1==1 or Config_utils.ipmi_capable?
+    text = <<EOF
+
+Next, you will be able to configure IPMI settings. If you have
+the IPMI configured manually, you can "SKIP" this step and go
+to the next step.
+
+Please, Select an option.
+
+EOF
+
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Configure IPMI"
+    dialog.cancel_label = "SKIP"
+    dialog.no_label = "SKIP"
+    yesno = dialog.yesno(text,0,0)
+
+    if yesno # yesno is "yes" -> true
+
+        # Conf for ipmi
+        ipmiconf = IpmiConf.new
+        ipmiconf.doit # launch wizard
+
+        general_conf["ipmi"] = {}
+        general_conf["ipmi"]["ip"] = ipmiconf.conf["IP:"] if !ipmiconf.conf.empty? and ipmiconf.conf["IP:"]
+        general_conf["ipmi"]["netmask"] = ipmiconf.conf["Netmask:"] if !ipmiconf.conf.empty? and ipmiconf.conf["Netmask:"]
+        general_conf["ipmi"]["gateway"] = ipmiconf.conf["Gateway:"] if !ipmiconf.conf.empty? and ipmiconf.conf["Gateway:"]
+        
+    end
+end
+##########################
 # SEGMENTS CONFIGURATION #
 ##########################
 
@@ -263,6 +297,14 @@ unless general_conf["network"]["dns"].nil? or general_conf["network"]["dns"].emp
         text += "    #{dns}\n"
     end
 end
+
+unless general_conf["ipmi"].nil? or general_conf["ipmi"].empty?
+    text += "- IPMI Network Configuration:\n"
+    text += "Ip: #{general_conf['ipmi']['ip']}\n"
+    text += "Netmask: #{general_conf['ipmi']['netmask']}\n"
+    text += "Gateway: #{general_conf['ipmi']['gateway']}\n"
+end
+
 
 unless general_conf["segments"].nil? or general_conf["segments"].empty?
     text += "- Segments:\n"

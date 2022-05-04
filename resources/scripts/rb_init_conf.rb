@@ -41,6 +41,8 @@ cloud_address = init_conf['cloud_address']
 
 network = init_conf['network']
 
+ipmi = init_conf['ipmi']
+
 segments = init_conf['segments']
 
 # Create file with bash env variables
@@ -90,7 +92,29 @@ system('depmod')
 system('modprobe pf_ring')
 sleep 3
 
+####################
+# Set IPMI         #
+####################
+unless ipmi.nil? or ipmi.empty?
+  net_ipmi_ip = ipmi['ip'] rescue nil
+  net_ipmi_netmask = ipmi['netmask'] rescue nil
+  net_ipmi_gateway = ipmi['gatway'] rescue nil
 
+  puts "Applying IPMI settings ..."
+
+  system("ipmitool lan set 1 ipsrc static")
+  system("ipmitool lan set 1 ipaddr #{net_ipmi_ip}") if net_ipmi_ip
+  system("ipmitool lan set 1 netmask #{net_ipmi_netmask}") if net_ipmi_netmask
+  system("ipmitool lan set 1 defgw ipaddr #{net_ipmi_gateway}") if net_ipmi_gateway
+  system("ipmitool sol set force-encryption true 1")
+  system("ipmitool sol set force-authentication true 1")
+  system("ipmitool sol set character-accumulate-level 10 1")
+  system("ipmitool sol set character-send-threshold 100 1")
+  system("ipmitool sol set volatile-bit-rate 115.2 1")
+  system("ipmitool sol set non-volatile-bit-rate 115.2 1")
+
+  puts "IPMI Configuration completed"
+end
 ####################
 # Set NETWORK      #
 ####################
