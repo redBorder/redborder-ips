@@ -389,7 +389,7 @@ module Config_utils
       pether_speed=`cat /sys/class/net/#{pether}/speed 2>/dev/null`.strip
     end
     
-    pether_speed="unkn" if pether_speed.nil? or pether_speed.empty?
+    pether_speed="unkn" if pether_speed.nil? or pether_speed.empty? or pether_speed.to_s == "-1"
     return pether_speed
   end
 
