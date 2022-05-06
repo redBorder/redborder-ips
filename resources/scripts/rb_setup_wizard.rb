@@ -166,7 +166,7 @@ end
 ##########################
 # IPMI    CONFIGURATION  #
 ##########################
-if 1==1 or Config_utils.ipmi_capable?
+if Config_utils.ipmi_capable?
     text = <<EOF
 
 Next, you will be able to configure IPMI settings. If you have
