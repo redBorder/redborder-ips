@@ -290,11 +290,8 @@ if !network.nil? #Firewall rules are not needed in cloud environments
 
   # Add rules here
   
-  #kafka
-  system("firewall-cmd --permanent --zone=public --add-port=9092/udp &>/dev/nul")
-
   # Reload firewalld configuration
-  system("firewall-cmd --reload &>/dev/null")
+  #system("firewall-cmd --reload &>/dev/null")
 
 end
 
