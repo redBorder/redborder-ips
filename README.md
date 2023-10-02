@@ -1,6 +1,6 @@
 # redborder-ips Main package
  
-Main package to install redborder ips in Centos7
+Main package to install redborder ips in Rocky Linux 9
 
 #### Platforms
 
