@@ -66,5 +66,8 @@ systemctl enable pf_ring && systemctl start pf_ring
 %doc
 
 %changelog
+* Mon Oct 02 2023 Miguel Negrón <manegron@redborder.com> - 1.3.2-1
+- Add new script and open kafka port
+
 * Mon Mar 21 2021 Miguel Negron <manegron@redborder.com> - 0.0.1-1
 - first spec version
