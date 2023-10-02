@@ -291,7 +291,7 @@ if !network.nil? #Firewall rules are not needed in cloud environments
   # Add rules here
   
   # Reload firewalld configuration
-  # system("firewall-cmd --reload &>/dev/null")
+  #system("firewall-cmd --reload &>/dev/null")
 
 end
 
