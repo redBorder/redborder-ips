@@ -531,7 +531,7 @@ class CloudAddressConf < WizConf
 
 Please, set cloud address of the redborder manager.
 
-Don't use http:// or https:// in front, introduce the url domain name of the manager.
+Do not use http:// or https:// in front, introduce the url domain name of the manager.
 
 EOF
             items = []

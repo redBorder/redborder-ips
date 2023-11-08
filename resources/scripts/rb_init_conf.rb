@@ -276,13 +276,18 @@ unless Config_utils.has_internet?
   exit 1
 end
 
+##############################
+# Accept chef-client license #
+##############################
+system('chef-client --chef-license accept &>/dev/null')
 
 ####################
 # Set UTC timezone #
 ####################
 
 system("timedatectl set-timezone UTC")
-system("ntpdate pool.ntp.org")
+# TODO
+#system("ntpdate pool.ntp.org")
 
 
 #Firewall rules
