@@ -290,6 +290,7 @@ system('chef-client --chef-license accept &>/dev/null')
 ####################
 
 system("timedatectl set-timezone UTC")
+# TODO
 #system("ntpdate pool.ntp.org")
 
 
