@@ -70,6 +70,9 @@ systemctl enable pf_ring && systemctl start pf_ring
 %doc
 
 %changelog
+* Tue Nov 21 2023 Vicente Mesa <vimesa@redborder.com> - 1.3.4-1
+- Add dhclient
+
 * Tue Nov 14 2023 Miguel Negrón <manegron@redborder.com> - 1.3.3-1
 - add network scripts
 
