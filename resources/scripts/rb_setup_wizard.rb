@@ -162,6 +162,33 @@ EOF
         general_conf["network"].delete("dns")
     end
 end
+##############################
+# INTERFACES  CONFIGURATION  #
+##############################
+if general_conf["network"]["interfaces"].size > 1
+    static_interface = general_conf["network"]["interfaces"].find { |i| i["mode"] == "static" }
+    dhcp_interfaces = general_conf["network"]["interfaces"].select { |i| i["mode"] == "dhcp" }
+
+    if static_interface && dhcp_interfaces.size >= 1
+        general_conf["network"]["management_interface"] = static_interface["device"]
+    else
+        interface_options = general_conf["network"]["interfaces"].map { |i| [i["device"]] }
+        text = <<EOF
+You have multiple network interfaces configured.
+Please select one to be used as the management interface.
+EOF
+        dialog = MRDialog.new
+        dialog.clear = true
+        dialog.title = "Select Management Interface"
+        management_iface = dialog.menu(text, interface_options, 10, 50)
+
+        if management_iface.nil? || management_iface.empty?
+            cancel_wizard
+        else
+            general_conf["network"]["management_interface"] = management_iface
+        end
+    end
+end
 
 ##########################
 # IPMI    CONFIGURATION  #
