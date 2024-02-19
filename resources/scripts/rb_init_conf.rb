@@ -240,13 +240,12 @@ unless network.nil? # network will not be defined in cloud deployments
   end
 
   # Configure NETWORK 
-  management_interface = init_conf['network']['management_interface'] if init_conf['network'] && init_conf['network']['management_interface']
   network['interfaces'].each do |iface|
     dev = iface['device']
     iface_mode = iface['mode']
 
     open("/etc/sysconfig/network-scripts/ifcfg-#{dev}", 'w') { |f|
-      # Configuración común a todas las interfaces
+      # Commom configuration to all interfaces
       f.puts "BOOTPROTO=#{iface_mode}"
       f.puts "DEVICE=#{dev}"
       f.puts "ONBOOT=yes"
