@@ -271,6 +271,7 @@ unless network.nil? # network will not be defined in cloud deployments
       end
 
       if Config_utils.net_get_device_bypass_master(dev)
+        # this port is a bypass master ... need to set to standard nic
         system("bpctl_util #{dev} set_std_nic on")
       end
     }
