@@ -258,7 +258,11 @@ unless network.nil? # network will not be defined in cloud deployments
           f.puts "IPADDR=#{iface['ip']}" if iface['ip']
           f.puts "NETMASK=#{iface['netmask']}" if iface['netmask']
           f.puts "GATEWAY=#{iface['gateway']}" if iface['gateway']
-          f.puts "DEFROUTE=yes" if dev == management_interface
+          if dev == management_interface
+            f.puts "DEFROUTE=yes"
+          else
+            f.puts "DEFROUTE=no"
+          end
         else
           p err_msg = "Invalid network configuration for device #{dev}. Please review #{INITCONF} file"
           exit 1
