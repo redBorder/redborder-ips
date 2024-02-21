@@ -45,6 +45,8 @@ ipmi = init_conf['ipmi']
 
 segments = init_conf['segments']
 
+management_interface = init_conf['network']['management_interface'] if init_conf['network'] && init_conf['network']['management_interface']
+
 # Create file with bash env variables
 open("/etc/redborder/rb_init_conf.conf", "w") { |f|
   f.puts "#REBORDER ENV VARIABLES"
@@ -237,33 +239,45 @@ unless network.nil? # network will not be defined in cloud deployments
     end
   end
 
-  # Configure NETWORK
+  # Configure NETWORK 
   network['interfaces'].each do |iface|
     dev = iface['device']
     iface_mode = iface['mode']
 
     open("/etc/sysconfig/network-scripts/ifcfg-#{dev}", 'w') { |f|
+      # Commom configuration to all interfaces
+      f.puts "BOOTPROTO=#{iface_mode}"
+      f.puts "DEVICE=#{dev}"
+      f.puts "ONBOOT=yes"
+      dev_uuid = File.read("/proc/sys/kernel/random/uuid").chomp
+      f.puts "UUID=#{dev_uuid}"
+
       if iface_mode != 'dhcp'
-        if Config_utils.check_ipv4({:ip => iface['ip'], :netmask => iface['netmask']})  and Config_utils.check_ipv4(:ip => iface['gateway'])
-          f.puts "IPADDR=#{iface['ip']}"
-          f.puts "NETMASK=#{iface['netmask']}"
-          f.puts "GATEWAY=#{iface['gateway']}" unless iface['gateway'].nil?
+        # Specific handling for static and management interfaces
+        if dev == management_interface || Config_utils.check_ipv4(ip: iface['ip'], netmask: iface['netmask'], gateway: iface['gateway'])
+          f.puts "IPADDR=#{iface['ip']}" if iface['ip']
+          f.puts "NETMASK=#{iface['netmask']}" if iface['netmask']
+          f.puts "GATEWAY=#{iface['gateway']}" if iface['gateway']
+          if dev == management_interface
+            f.puts "DEFROUTE=yes"
+          else
+            f.puts "DEFROUTE=no"
+          end
         else
           p err_msg = "Invalid network configuration for device #{dev}. Please review #{INITCONF} file"
           exit 1
         end
+      else
+        # Specific settings for DHCP
+        f.puts "PEERDNS=no"
+        f.puts "DEFROUTE=no" unless dev == management_interface
       end
-      dev_uuid = File.read("/proc/sys/kernel/random/uuid").chomp
-      f.puts "BOOTPROTO=#{iface_mode}"
-      f.puts "DEVICE=#{dev}"
-      f.puts "ONBOOT=yes"
-      f.puts "UUID=#{dev_uuid}"
-    }
 
-    if Config_utils.net_get_device_bypass_master(dev)
-      # this port is a bypass master ... need to set to standard nic
-      system("bpctl_util #{dev} set_std_nic on")
-    end
+      if Config_utils.net_get_device_bypass_master(dev)
+        # this port is a bypass master ... need to set to standard nic
+        system("bpctl_util #{dev} set_std_nic on")
+      end
+    }
   end
 
   # Restart NetworkManager
