@@ -15,15 +15,147 @@
 ## along with redBorder. If not, see <http://www.gnu.org/licenses/>.
 ########################################################################
 
-
-require 'chef'
 require 'json'
 require 'socket'
 require 'net/http'
 require "getopt/std"
 require 'fileutils'
+require 'base64'
+require 'time'
+require 'digest/sha1'
+require 'openssl'
+require 'net/https'
 
-@weburl = "https://webui.service"
+class ChefAPI
+
+  # Public: Gets/Sets the http object.
+  attr_accessor :http
+
+  # Public: Gets/Sets the String path for the HTTP request.
+  attr_accessor :path
+
+  # Public: Gets/Sets the String client_name containing the Chef client name.
+  attr_accessor :client_name
+
+  # Public: Gets/Sets the String key_file that is path to the Chef client PEM file.
+  attr_accessor :key_file
+
+  # Public: Initialize a Chef API call.
+  #
+  # opts - A Hash containing the settings desired for the HTTP session and auth.
+  #        :server       - The String server that is the Chef server name (required).
+  #        :port         - The String port for the Chef server (default: 443).
+  #        :use_ssl      - The Boolean use_ssl to use Net::HTTP SSL
+  #                        functionality or not (default: true).
+  #        :ssl_insecure - The Boolean ssl_insecure to skip strict SSL cert
+  #                        checking (default: OpenSSL::SSL::VERIFY_PEER).
+  #        :client_name  - The String client_name that is the name of the Chef
+  #                        client (required).
+  #        :key_file     - The String key_file that is the path to the Chef client
+  #                        PEM file (required).
+  def initialize(opts={})
+    server            = opts[:server]
+    port              = opts.fetch(:port, 443)
+    use_ssl           = opts.fetch(:use_ssl, true)
+    ssl_insecure      = opts[:ssl_insecure] ? OpenSSL::SSL::VERIFY_NONE : OpenSSL::SSL::VERIFY_PEER
+    @client_name      = opts[:client_name]
+    @key_file         = opts[:key_file]
+
+    @http             = Net::HTTP.new(server, port)
+    @http.use_ssl     = use_ssl
+    @http.verify_mode = ssl_insecure
+  end
+
+  # Public: Make the actual GET request to the Chef server.
+  #
+  # req_path - A String containing the server path you want to send with your
+  #            GET request (required).
+  #
+  # Examples
+  #
+  #   get_request('/environments/_default/nodes')
+  #   # => ["server1.com","server2.com","server3.com"]
+  #
+  # Returns different Object type depending on request.
+  def get_request(req_path)
+    @path = req_path
+
+    begin
+      request  = Net::HTTP::Get.new(path, headers)
+      response = http.request(request)
+
+      response.body
+    rescue OpenSSL::SSL::SSLError => e
+      raise "SSL error: #{e.message}."
+    end
+  end
+
+  private
+
+  # Private: Encode a String with SHA1.digest and then Base64.encode64 it.
+  #
+  # string - The String you want to encode.
+  #
+  # Examples
+  #
+  #   encode('hello')
+  #   # => "qvTGHdzF6KLavt4PO0gs2a6pQ00="
+  #
+  # Returns the hashed String.
+  def encode(string)
+    ::Base64.encode64(Digest::SHA1.digest(string)).chomp
+  end
+
+  # Private: Forms the HTTP headers required to authenticate and query data
+  # via Chef's REST API.
+  #
+  # Examples
+  #
+  #   headers
+  #   # => {
+  #     "Accept"                => "application/json",
+  #     "X-Ops-Sign"            => "version=1.0",
+  #     "X-Ops-Userid"          => "client-name",
+  #     "X-Ops-Timestamp"       => "2012-07-27T20:09:25Z",
+  #     "X-Ops-Content-Hash"    => "JJKXjxksmsKXM=",
+  #     "X-Ops-Authorization-1" => "JFKXjkmdkDMKCMDKd+",
+  #     "X-Ops-Authorization-2" => "JFJXjxjJXXJ/FFjxjd",
+  #     "X-Ops-Authorization-3" => "FFJfXffffhhJjxFJff",
+  #     "X-Ops-Authorization-4" => "Fjxaaj2drg5wcZ8I7U",
+  #     "X-Ops-Authorization-5" => "ffjXeiiiaHskkflllA",
+  #     "X-Ops-Authorization-6" => "FjxJfjkskqkfjghAjQ=="
+  #   }
+  #
+  # Returns a Hash with the necessary headers.
+  def headers
+    # remove parameters from the path
+    _path=path.split('?').first
+
+    body      = ""
+    timestamp = Time.now.utc.iso8601
+    key       = OpenSSL::PKey::RSA.new(File.read(key_file))
+    canonical = "Method:GET\nHashed Path:#{encode(_path)}\nX-Ops-Content-Hash:#{encode(body)}\nX-Ops-Timestamp:#{timestamp}\nX-Ops-UserId:#{client_name}"
+
+    header_hash = {
+      'Accept'             => 'application/json',
+      'X-Ops-Sign'         => 'version=1.0',
+      'X-Ops-Userid'       => client_name,
+      'X-Ops-Timestamp'    => timestamp,
+      'X-Ops-Content-Hash' => encode(body)
+    }
+
+    signature = Base64.encode64(key.private_encrypt(canonical))
+    signature_lines = signature.split(/\n/)
+    signature_lines.each_index do |idx|
+      key = "X-Ops-Authorization-#{idx + 1}"
+      header_hash[key] = signature_lines[idx]
+    end
+
+    header_hash
+  end
+
+end
+
 CLIENTPEM   = "/etc/chef/client.pem"
 QUIET       = 0
 
@@ -66,18 +198,7 @@ elsif !opt["b"].nil?
   binding_ids << opt["b"]
 end
 
-Chef::Config.from_file("/etc/chef/client.rb")
-Chef::Config[:http_retry_count]=10
-Chef::Config[:log_level]=:error
-Chef::Config[:verbose_logging]=false
-
-class Chef
-  class Log
-    def self.warn(message)
-    end
-  end
-end
-
+@weburl = "webui.service"
 @client_name = File.read('/etc/chef/nodename').strip
 @client_id   = @client_name.split('-').last
 
@@ -91,6 +212,14 @@ end
 @v_geoip                = "#{@v_geoip_dir}/#{@v_geoipname}"
 @v_unicode_mapname      = "unicode.map"
 @v_unicode_map          = "/etc/snort/#{@group_id}/#{@v_unicode_mapname}"
+
+@chef=ChefAPI.new(
+  server: @weburl,
+  use_ssl: true,
+  ssl_insecure: true,
+  client_name: @client_name,
+  key_file: "/etc/chef/client.pem" 
+)
 
 def print_ok(text_length=76)
   #printf("%#{RES_COL - text_length}s", "[\e[32m  OK  \e[0m]")
@@ -112,8 +241,7 @@ def get_rules(remote_name, snortrules, binding_id)
 
   File.delete(snortrulestmp) if File.exist?(snortrulestmp)
 
-  rest   = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-  result = rest.get_rest("sensors/#{@client_id}/#{remote_name}?group_id=#{@group_id}&binding_id=#{binding_id}", false, {"X-Redborder" => "true"})
+  result = @chef.get_request("/sensors/#{@client_id}/#{remote_name}?group_id=#{@group_id}&binding_id=#{binding_id}")
 
   if result
     File.open(snortrulestmp, 'w') {|f| f.write(result)}
@@ -207,8 +335,7 @@ def get_dynamic_rules(dbversion_ids)
 
   dbversion_ids.split(",").each do |dbversion_id|
 
-    rest   = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-    result = rest.get_rest("/rule_versions/#{dbversion_id}/so_rules_file", false, {"X-Redborder" => "true"})
+    result = @chef.get_request("/rule_versions/#{dbversion_id}/so_rules_file")
 
     if result
       open(@v_so_rulestmp, "wb") do |file|
@@ -248,8 +375,8 @@ def get_gen_msg
 
   dbversion_ids = get_rule_db_version_ids
   dbversion_ids.each do |dbversion_id|
-    rest   = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-    result = rest.get_rest("/rule_versions/#{dbversion_id}/gen_msg_file", false, {"X-Redborder" => "true"})
+    result = @chef.get_request("/rule_versions/#{dbversion_id}/gen_msg_file")
+    
     if result
       File.open(GENFILE_TMP, "a") do |file|
         file.write(result)
@@ -279,8 +406,7 @@ def get_classifications
 
   File.delete "#{@v_classifications}.tmp" if File.exist?("#{@v_classifications}.tmp")
 
-  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-  result      = rest.get_rest("sensors/#{@client_id}/classifications.txt?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
+  result = @chef.get_request("/sensors/#{@client_id}/classifications.txt?group_id=#{@group_id}")
 
   if result
     File.open("#{@v_classifications}.tmp", 'w') {|f| f.write(result)}
@@ -304,9 +430,7 @@ def get_classifications
 end
 
 def get_rule_db_version_ids
-  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-  result      = rest.get_rest("sensors/#{@client_id}/get_rule_db_version_ids?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
-  return result
+  @chef.get_request("/sensors/#{@client_id}/get_rule_db_version_ids?group_id=#{@group_id}")
 end
 
 def get_thresholds(binding_id)
@@ -315,8 +439,7 @@ def get_thresholds(binding_id)
 
   File.delete "#{@v_threshold}.tmp" if File.exist?("#{@v_threshold}.tmp")
 
-  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-  result      = rest.get_rest("sensors/#{@client_id}/thresholds.txt?group_id=#{@group_id}&binding_id=#{binding_id}", false, {"X-Redborder" => "true"})
+  result = @chef.get_request("/sensors/#{@client_id}/thresholds.txt?group_id=#{@group_id}&binding_id=#{binding_id}")
 
   if result
     File.open("#{@v_threshold}.tmp", 'w') {|f| f.write(result)}
@@ -346,8 +469,7 @@ def get_unicode_map
 
   File.delete "#{@v_unicode_map}.tmp" if File.exist?("#{@v_unicode_map}.tmp")
 
-  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-  result      = rest.get_rest("sensors/#{@client_id}/unicode_map.txt?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
+  result = @chef.get_request("/sensors/#{@client_id}/unicode_map.txt?group_id=#{@group_id}")
 
   if result
     File.open("#{@v_unicode_map}.tmp", 'w') {|f| f.write(result)}
@@ -381,8 +503,7 @@ def get_iplist_files
 
   File.delete "#{@v_iplist}.tmp" if File.exist?("#{@v_iplist}.tmp")
 
-  rest        = Chef::REST.new(@weburl, @client_name, Chef::Config[:client_key])
-  result      = rest.get_rest("sensors/#{@client_id}/iplist.txt?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
+  result = @chef.get_request("/sensors/#{@client_id}/iplist.txt?group_id=#{@group_id}")
 
   if result
     FileUtils.mkdir_p @v_iplist_dir
@@ -425,8 +546,7 @@ def get_geoip_files
 
   File.delete "#{@v_geoip}.tmp" if File.exist?("#{@v_geoip}.tmp")
 
-  rest        = Chef::REST.new(Chef::Config[:chef_server_url], @client_name, Chef::Config[:client_key])
-  result      = rest.get_rest("sensors/#{@client_id}/geoip.txt?group_id=#{@group_id}", false, {"X-Redborder" => "true"})
+  result = @chef.get_request("/sensors/#{@client_id}/geoip.txt?group_id=#{@group_id}")
 
   if result
     FileUtils.mkdir_p @v_geoip_dir
@@ -476,21 +596,6 @@ def copy_backup( backup_dir, datestr, temp_file_path, final_file_path, filename,
     end
   end
 end
-
-#File.open("/etc/rb_sysconf.conf", "r").each do |line|
-#  var = /^(\w+)\s*=\s*\"?(.*?)\"?\s*$/.match(line)
-#  instance_variable_set("@#{var[1]}", var[2])
-#end
-#
-#if @sys_hostname.empty?
-#  puts "Hostname is not configured!"
-#  exit
-#end
-#
-#if @dns_domain.empty?
-#  puts "Domain is not configured!"
-#  exit
-#end
 
 if !File.exists?(CLIENTPEM)
   puts "The sensor is not registered!"
@@ -558,7 +663,7 @@ if Dir.exist?@v_group_dir and File.exists?"#{@v_group_dir}/cpu_list"
       @v_threshold            = "/etc/snort/#{@group_id}/snort-binding-#{binding_id}/#{@v_thresholdname}"
       @v_classificationsname  = "classification.config"
       @v_classifications      = "/etc/snort/#{@group_id}/#{@v_classificationsname}"
-      @v_snortversion         = `/usr/sbin/bin/snort --version 2>&1|grep Version|sed 's/.*Version //'|awk '{print $1}'`.chomp
+      @v_snortversion         = `/usr/sbin/snort --version 2>&1|grep Version|sed 's/.*Version //'|awk '{print $1}'`.chomp
       @v_so_rules_dir_tmp     = "/etc/snort/#{@group_id}/snort-binding-#{binding_id}/so_rules-tmp"
       @v_so_rulestmp          = "/etc/snort/#{@group_id}/snort-binding-#{binding_id}/snort-so_rules-tmp.tar.gz"
       @v_backup_dir           = "/etc/snort/#{@group_id}/snort-binding-#{binding_id}/backups"
