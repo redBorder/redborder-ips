@@ -14,7 +14,7 @@ Requires: bash dialog dmidecode rsync nc telnet redborder-common redborder-chef-
 Requires: chef-workstation
 Requires: network-scripts network-scripts-teamd
 Requires: redborder-cgroups
-Requires: daq = 2.0.4 daq-modules = 2.0.4
+Requires: daq daq-modules
 
 %description
 %{summary}
