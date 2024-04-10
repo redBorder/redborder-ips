@@ -14,7 +14,7 @@ Requires: bash dialog dmidecode rsync nc telnet redborder-common redborder-chef-
 Requires: chef-workstation
 Requires: network-scripts network-scripts-teamd
 Requires: redborder-cgroups
-Requires: daq daq-modules
+Requires: daq = 2.0.7 daq-modules = 2.0.7
 
 %description
 %{summary}
@@ -72,6 +72,9 @@ systemctl enable pf_ring && systemctl start pf_ring
 %doc
 
 %changelog
+* Thu Dec 14 2023 Miguel Negrón <manegron@redborder.com> - 1.4.0-1
+- Set version for daq to 2.0.7
+
 * Thu Dec 14 2023 Miguel Álvarez <malvarez@redborder.com> - 1.3.5-1
 - Add cgroups
 
