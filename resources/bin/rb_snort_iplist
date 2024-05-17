@@ -30,7 +30,7 @@ if [ "x$dirname" != "x" ]; then
   if [ -S $dirname/SNORT.sock ]; then
     groupdir=$(dirname $(dirname $dirname))
     iplist_file="${groupdir}/iplists/iplist_script.sh"
-    out=$(/usr/lib/redborder/bin/snort_iplist $dirname -timeout 5000;)
+    out=$(/usr/bin/snort_iplist $dirname -timeout 5000;)
     if [ "x$out" != "x" ]; then
       echo $out | grep -q "bad response"
       if [ $? -eq 0 ]; then
