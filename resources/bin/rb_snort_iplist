@@ -1,0 +1,52 @@
+#!/bin/bash
+
+#######################################################################
+# Copyright (c) 2024 ENEO Tecnología S.L.
+# This file is part of redBorder.
+# redBorder is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# redBorder is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License License for more details.
+# You should have received a copy of the GNU Affero General Public License License
+# along with redBorder. If not, see <http://www.gnu.org/licenses/>.
+#######################################################################
+
+function usage() {
+  echo "$0 <instance-0-dir>|<group_id>"
+  echo "Example: $0 0"
+}
+
+dirname="$1"
+error=0
+
+if [ "x$dirname" != "x" ]; then
+  if [ ! -d $dirname ]; then
+    dirname="/etc/snort/${dirname}/cs/instance-0"
+  fi
+  if [ -S $dirname/SNORT.sock ]; then
+    groupdir=$(dirname $(dirname $dirname))
+    iplist_file="${groupdir}/iplists/iplist_script.sh"
+    out=$(/usr/lib/redborder/bin/snort_iplist $dirname -timeout 5000;)
+    if [ "x$out" != "x" ]; then
+      echo $out | grep -q "bad response"
+      if [ $? -eq 0 ]; then
+        echo -n "ERROR: "
+        error=1
+      fi
+      echo $out
+    else
+      error=1
+    fi
+  else
+    echo "Socket not found on $dirname/SNORT.sock"
+  fi
+else
+  usage
+fi
+
+exit $error
+
