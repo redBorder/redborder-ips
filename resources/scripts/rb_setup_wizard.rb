@@ -209,6 +209,7 @@ EOF
     dialog.title = "Configure IPMI"
     dialog.cancel_label = "SKIP"
     dialog.no_label = "SKIP"
+    dialog.dialog_options = "--defaultno"
     yesno = dialog.yesno(text,0,0)
 
     if yesno # yesno is "yes" -> true
