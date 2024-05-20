@@ -165,12 +165,12 @@ end
 ##############################
 # INTERFACES  CONFIGURATION  #
 ##############################
-if general_conf["network"]["interfaces"].size > 1
-    static_interface = general_conf["network"]["interfaces"].find { |i| i["mode"] == "static" }
+if general_conf["network"]["interfaces"].size >= 1
+    static_interfaces = general_conf["network"]["interfaces"].select { |i| i["mode"] == "static" }
     dhcp_interfaces = general_conf["network"]["interfaces"].select { |i| i["mode"] == "dhcp" }
 
-    if static_interface && dhcp_interfaces.size >= 1
-        general_conf["network"]["management_interface"] = static_interface["device"]
+    if static_interfaces.size == 1
+        general_conf["network"]["management_interface"] = static_interfaces[0]["device"]
     else
         interface_options = general_conf["network"]["interfaces"].map { |i| [i["device"]] }
         text = <<EOF
@@ -188,6 +188,9 @@ EOF
             general_conf["network"]["management_interface"] = management_iface
         end
     end
+else
+    # we do not have a management interface
+    cancel_wizard
 end
 
 ##########################
