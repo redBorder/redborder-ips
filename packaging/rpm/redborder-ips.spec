@@ -55,7 +55,6 @@ systemctl enable pf_ring && systemctl start pf_ring
 # adjust kernel printk settings for the console
 echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 /sbin/sysctl --system > /dev/null 2>&1
-=======
 
 %files
 %defattr(0755,root,root)
