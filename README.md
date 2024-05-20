@@ -6,9 +6,9 @@ Main package to install redborder ips in Rocky Linux 9
 
 - Rocky Linux 9
 
-#### Installation
+#### Installation
 
-1. Flow instruction of https://repo.redborder.com
+1. Install the redborder repo following the steps described in https://repo.redborder.com
 
 2. yum install redborder-ips
 
