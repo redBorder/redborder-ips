@@ -52,7 +52,9 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 [ -f /usr/lib/redborder/bin/rb_rubywrapper.sh ] && /usr/lib/redborder/bin/rb_rubywrapper.sh -c
 systemctl daemon-reload
 systemctl enable pf_ring && systemctl start pf_ring
-[ -f /etc/rb_sysconf.conf.default -a ! -f /etc/rb_sysconf.conf ] && cp /etc/rb_sysconf.conf.default /etc/rb_sysconf.conf
+# adjust kernel printk settings for the console
+echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
+/sbin/sysctl --system > /dev/null 2>&1
 
 %files
 %defattr(0755,root,root)
