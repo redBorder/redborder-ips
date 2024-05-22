@@ -102,6 +102,54 @@ unless yesno # yesno is "yes" -> true
     cancel_wizard
 end
 
+##############################
+# RENAME NETWORK INTERFACES  #
+##############################
+if Config_utils.need_to_rename_network_interfaces?
+  text = <<EOF
+
+  We have detected that your system has modern network interface names (e.g., enp0s3, wlp2s0) instead of the traditional names (e.g., eth0, eth1).
+
+  Renaming network interfaces can help maintain consistency and compatibility with certain applications and scripts that expect the older naming convention.
+
+  Would you like to rename your network interfaces to the traditional naming convention?
+
+  Note: This process will modify system configuration files and may require a system restart to apply the changes.
+
+EOF
+
+  dialog = MRDialog.new
+  dialog.clear = true
+  dialog.title = "Rename Network Interfaces"
+  dialog.cancel_label = "SKIP"
+  dialog.no_label = "SKIP"
+  yesno = dialog.yesno(text,0,0)
+  if yesno
+    text = <<EOF
+
+    You have chosen to rename your network interfaces. Please confirm your choice.
+
+EOF
+
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Confirm configuration"
+    yesno = dialog.yesno(text,0,0)
+
+    unless yesno # yesno is "yes" -> true
+        cancel_wizard
+    end
+    command = "#{ENV['RBBIN']}/rb_rename_network_interfaces.sh"
+
+    dialog = MRDialog.new
+    dialog.clear = false
+    dialog.title = "Applying configuration"
+    dialog.prgbox(command,20,100, "Executing rb_rename_network_interfaces")
+    system("reboot")
+  end
+
+end
+
 ##########################
 # NETWORK CONFIGURATION  #
 ##########################
