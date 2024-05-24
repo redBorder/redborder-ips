@@ -421,6 +421,28 @@ module Config_utils
     return { :ip => net_ipmi_ip, :netmask => net_ipmi_netmask, :gateway => net_ipmi_gateway}
   end
 
+  def self.get_network_interfaces
+    interfaces = []
+    `ip link show`.each_line do |line|
+      if line =~ /^\d+: ([^:]+):/
+        interfaces << $1 if $1 != "lo"
+      end
+    end
+    interfaces
+  end
+
+  def self.modern_interface?(interface)
+    old_pattern = /^eth\d+/
+    !(interface =~ old_pattern)
+  end
+
+  def self.need_to_rename_network_interfaces?
+    interfaces = get_network_interfaces
+    modern_interfaces = interfaces.select { |interface| modern_interface?(interface) }
+
+    modern_interfaces.any?
+  end
+
 end
 
 ## vim:ts=4:sw=4:expandtab:ai:nowrap:formatoptions=croqln:
