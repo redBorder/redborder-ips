@@ -17,12 +17,13 @@
 
 counter=0
 
-interfaces=$(ls /sys/class/net | grep -v lo)
+interfaces=$(ls /sys/class/net | grep -Ev '^(lo|br)') # Exclude loopback and bridges on rename
 
 udev_rules_file="/etc/udev/rules.d/10-persistent-net.rules"
 
 echo "" > $udev_rules_file
 
+# TODO: check if we really need to rename interfaces
 for interface in $interfaces; do
     mac_address=$(cat /sys/class/net/$interface/address)
     new_name="eth$counter"
