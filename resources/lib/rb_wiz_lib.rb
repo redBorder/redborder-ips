@@ -453,9 +453,10 @@ Port Network configuration menu:
 
 EOF
 
-            text += "Segments: \n"
+            text += "Segments: PEPE \n"
+            text += "#{segments} \n"
             segments.each do |segment|
-                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
+                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support FOF: #{segment["bypass_support"]} \n" #HERE PRINTING
             end
             text += "\n"
        
@@ -587,9 +588,9 @@ EOF
             menu_data = Struct.new(:tag, :item)
             data = menu_data.new
 
-            text += "Segments: \n"
+            text += "Segments: PEPA \n"
             segments.each do |segment|
-                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
+                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support PUP: #{segment["bypass_support"]} \n"
             end
             text += "\n"
 
@@ -712,7 +713,7 @@ EOF
                 @segments.each do |segment|
                     data = checklist_data.new
                     data.tag = segment["name"]
-                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]}"
+                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support POPO: #{segment["bypass_support"]}"
                     checklist_items.push(data.to_a)
                 end
 
