@@ -692,11 +692,11 @@ EOF
                         ports.each{ |port| all_port_bypass = false unless Config_utils.net_get_device_bypass_support(port) }
 
                         if all_port_bypass
-                            bpbr_segments = segments.select{|s| s.name.start_with?"bp"} rescue []
+                            bpbr_segments = segments.select{|s| s['name']start_with?"bp"} rescue []
                             segment["name"] = "bpbr" + (bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = true
                         else
-                            br_segments = segments.select{|s| s.name.start_with?"br"} rescue []
+                            br_segments = segments.select{|s| s['name'].start_with?"br"} rescue []
                             segment["name"] = "br" + (br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = false
                         end                     
@@ -713,7 +713,7 @@ EOF
                 @segments.each do |segment|
                     data = checklist_data.new
                     data.tag = segment["name"]
-                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support POPO: #{segment["bypass_support"]}"
+                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support POPO: #{segment["bypass_support"]}" # Delete this segment
                     checklist_items.push(data.to_a)
                 end
 
