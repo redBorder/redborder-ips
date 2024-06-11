@@ -5,35 +5,11 @@ require 'net/ip'
 require 'system/getifaddrs'
 require 'netaddr'
 require 'uri'
+require_relative 'wizard_helper'
 require File.join(ENV['RBDIR'].nil? ? '/usr/lib/redborder' : ENV['RBDIR'],'lib/rb_config_utils.rb')
 
 CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
 LOGFILE  = "/tmp/rb_setup_wizard.log"
-class WizConf
-
-    # Read propierties from sysfs for a network devices
-    def netdev_property(devname)
-        netdev = {}
-        IO.popen("udevadm info -q property -p /sys/class/net/#{devname} 2>/dev/null").each do |line|
-            unless line.match(/^(?<key>[^=]*)=(?<value>.*)$/).nil?
-                netdev[line.match(/^(?<key>[^=]*)=(?<value>.*)$/)[:key]] = line.match(/^(?<key>[^=]*)=(?<value>.*)$/)[:value]
-            end
-        end
-        if File.exist?"/sys/class/net/#{devname}/address"
-            f = File.new("/sys/class/net/#{devname}/address",'r')
-            netdev["MAC"] = f.gets.chomp
-            f.close
-        end
-        if File.exist?"/sys/class/net/#{devname}/operstate"
-            f = File.new("/sys/class/net/#{devname}/operstate",'r')
-            netdev["STATUS"] = f.gets.chomp
-            f.close
-        end
-
-        netdev
-    end
-
-end
 
 # Class to create a Network configuration box
 class NetConf < WizConf
@@ -47,10 +23,6 @@ class NetConf < WizConf
         @devmode = { "dhcp" => "Dynamic", "static" => "Static" }
         @devmodereverse = { "Dynamic" => "dhcp", "Static" => "static" }
         @segments = []
-    end
-
-    def refresh_segments
-
     end
 
     def doit
@@ -705,7 +677,7 @@ EOF
                         end                     
                                                   
                         @segments.push(segment)
-                        refresh_segments
+                        @segments = WizardHelper.refresh_segments @segments
                     end
                 end
 
@@ -743,7 +715,7 @@ EOF
                         @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?                        
                     end
 
-                    refresh_segments
+                    @segments = WizardHelper.refresh_segments @segments
                 end
             else
                 # Cancel pressed
