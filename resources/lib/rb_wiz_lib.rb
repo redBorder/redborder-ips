@@ -683,23 +683,17 @@ EOF
                 end
 
             when "Delete segment"
-                require 'logger'
-                log = Logger.new('/tmp/log.log')
-                log.level = Logger::DEBUG
                 #Make a dialog with the actual segments
                 checklist_data = Struct.new(:tag, :item, :select)
                 checklist_items = []
-                log.debug(@segments)
                 @segments.each do |segment|
                     data = checklist_data.new
                     data.tag = segment["name"]
                     data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]}"
-                    log.debug(data)
                     checklist_items.push(data.to_a)
                 end
 
                 unless checklist_items.empty?
-                    log.debug('CHECKLIST EMPTY')
                     checklist_dialog = MRDialog.new
                     checklist_dialog.clear = true
                     checklist_dialog.title = "DELETE SEGMENT"
@@ -715,6 +709,7 @@ EOF
                     checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
+                    checklist_selected_items = checklist_selected_items.first.split(' ')
                     checklist_selected_items.each do |segment|
                         # Store the segments to be deleted in @delete_segments
                         @segments.each{ |s|  @deleted_segments.push(s) if s["name"] == segment }
