@@ -6,6 +6,7 @@ require 'system/getifaddrs'
 require 'netaddr'
 require 'uri'
 require_relative 'wizard_helper'
+require_relative 'wiz_conf'
 require File.join(ENV['RBDIR'].nil? ? '/usr/lib/redborder' : ENV['RBDIR'],'lib/rb_config_utils.rb')
 
 CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
@@ -682,17 +683,23 @@ EOF
                 end
 
             when "Delete segment"
+                require 'logger'
+                log = Logger.new('/tmp/log.log')
+                log.level = Logger::DEBUG
                 #Make a dialog with the actual segments
                 checklist_data = Struct.new(:tag, :item, :select)
                 checklist_items = []
+                log.debug(@segments)
                 @segments.each do |segment|
                     data = checklist_data.new
                     data.tag = segment["name"]
                     data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]}"
+                    log.debug(data)
                     checklist_items.push(data.to_a)
                 end
 
                 unless checklist_items.empty?
+                    log.debug('CHECKLIST EMPTY')
                     checklist_dialog = MRDialog.new
                     checklist_dialog.clear = true
                     checklist_dialog.title = "DELETE SEGMENT"
