@@ -49,6 +49,10 @@ class NetConf < WizConf
         @segments = []
     end
 
+    def refresh_segments
+
+    end
+
     def doit
         dialog = MRDialog.new
         dialog.clear = true
@@ -453,10 +457,9 @@ Port Network configuration menu:
 
 EOF
 
-            text += "Segments: PEPE \n"
-            text += "#{segments} \n"
+            text += "Segments: \n"
             segments.each do |segment|
-                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support FOF: #{segment["bypass_support"]} \n" #HERE PRINTING
+                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
             end
             text += "\n"
        
@@ -588,9 +591,9 @@ EOF
             menu_data = Struct.new(:tag, :item)
             data = menu_data.new
 
-            text += "Segments: PEPA \n"
+            text += "Segments: \n"
             segments.each do |segment|
-                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support PUP: #{segment["bypass_support"]} \n"
+                text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
             end
             text += "\n"
 
@@ -692,7 +695,7 @@ EOF
                         ports.each{ |port| all_port_bypass = false unless Config_utils.net_get_device_bypass_support(port) }
 
                         if all_port_bypass
-                            bpbr_segments = segments.select{|s| s['name']start_with?"bp"} rescue []
+                            bpbr_segments = segments.select{|s| s['name'].start_with?"bp"} rescue []
                             segment["name"] = "bpbr" + (bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = true
                         else
@@ -702,8 +705,8 @@ EOF
                         end                     
                                                   
                         @segments.push(segment)
+                        refresh_segments
                     end
-
                 end
 
             when "Delete segment"
@@ -713,7 +716,7 @@ EOF
                 @segments.each do |segment|
                     data = checklist_data.new
                     data.tag = segment["name"]
-                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support POPO: #{segment["bypass_support"]}" # Delete this segment
+                    data.item = "#{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]}"
                     checklist_items.push(data.to_a)
                 end
 
@@ -740,15 +743,7 @@ EOF
                         @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?                        
                     end
 
-                    # Reorganice segment names
-                    @segments.each_with_index do |segment, index|
-                        if segment["name"].start_with?"br" 
-                          segment["name"] = "br#{index}" 
-                        else 
-                          segment["name"] = "bpbr#{index}"
-                        end
-                        @segments[index] = segment
-                    end
+                    refresh_segments
                 end
             else
                 # Cancel pressed
