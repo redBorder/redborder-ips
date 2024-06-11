@@ -1,5 +1,5 @@
 class WizardHelper
-  # refresh_segments: 
+  # refresh_segments: Updates the names of segments which can have names duplicated to not being duplicated
   def self.refresh_segments(segments)
     segments.each_with_index do |segment, index|
       if segment["name"].start_with?"br" 
