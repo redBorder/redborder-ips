@@ -5,7 +5,7 @@ source /etc/init.d/functions
 source /etc/profile
 
 function usage() {
-    echo "$0 [ -l ] [ -c ] [ -s <service_name> ] [ -i ] [ -n <nodename> ]"
+    echo "$0 [ -l ] [ -s <service_name> ] [ -i ] [ -n <nodename> ]"
     echo "  * -l -> show logs after the wakeup"
     #echo "  * -i -> wakeup sensor nodes"
     #echo "  * -n <nodename> -> wakeup sensor/manager node name"
@@ -44,9 +44,9 @@ service=""
 while getopts "hs:l" name
 do
   case $name in
-    h) usage;;
     l) showlogs=1;;
     s) service="$OPTARG";;
+    *) usage;;
   esac
 done
 
