@@ -7,7 +7,6 @@ source /etc/profile
 function usage() {
     echo "$0 [ -l ] [ -c ] [ -s <service_name> ] [ -i ] [ -n <nodename> ]"
     echo "  * -l -> show logs after the wakeup"
-    echo "  * -c -> wakeup full cluster"
     #echo "  * -i -> wakeup sensor nodes"
     #echo "  * -n <nodename> -> wakeup sensor/manager node name"
     echo "  * -s <service> -> wakeup manager with this service name enabled"
