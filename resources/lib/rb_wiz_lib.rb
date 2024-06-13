@@ -709,7 +709,7 @@ EOF
                     checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
-                    checklist_selected_items = checklist_selected_items.first.split(' ')
+                    checklist_selected_items = checklist_selected_items.first.split(' ') rescue []
                     checklist_selected_items.each do |segment|
                         # Store the segments to be deleted in @delete_segments
                         @segments.each{ |s|  @deleted_segments.push(s) if s["name"] == segment }
