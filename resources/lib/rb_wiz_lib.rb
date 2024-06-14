@@ -5,35 +5,12 @@ require 'net/ip'
 require 'system/getifaddrs'
 require 'netaddr'
 require 'uri'
+require_relative 'wizard_helper'
+require_relative 'wiz_conf'
 require File.join(ENV['RBDIR'].nil? ? '/usr/lib/redborder' : ENV['RBDIR'],'lib/rb_config_utils.rb')
 
 CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
 LOGFILE  = "/tmp/rb_setup_wizard.log"
-class WizConf
-
-    # Read propierties from sysfs for a network devices
-    def netdev_property(devname)
-        netdev = {}
-        IO.popen("udevadm info -q property -p /sys/class/net/#{devname} 2>/dev/null").each do |line|
-            unless line.match(/^(?<key>[^=]*)=(?<value>.*)$/).nil?
-                netdev[line.match(/^(?<key>[^=]*)=(?<value>.*)$/)[:key]] = line.match(/^(?<key>[^=]*)=(?<value>.*)$/)[:value]
-            end
-        end
-        if File.exist?"/sys/class/net/#{devname}/address"
-            f = File.new("/sys/class/net/#{devname}/address",'r')
-            netdev["MAC"] = f.gets.chomp
-            f.close
-        end
-        if File.exist?"/sys/class/net/#{devname}/operstate"
-            f = File.new("/sys/class/net/#{devname}/operstate",'r')
-            netdev["STATUS"] = f.gets.chomp
-            f.close
-        end
-
-        netdev
-    end
-
-end
 
 # Class to create a Network configuration box
 class NetConf < WizConf
@@ -691,18 +668,18 @@ EOF
                         ports.each{ |port| all_port_bypass = false unless Config_utils.net_get_device_bypass_support(port) }
 
                         if all_port_bypass
-                            bpbr_segments = segments.select{|s| s.name.start_with?"bp"} rescue []
+                            bpbr_segments = segments.select{|s| s['name'].start_with?"bp"} rescue []
                             segment["name"] = "bpbr" + (bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = true
                         else
-                            br_segments = segments.select{|s| s.name.start_with?"br"} rescue []
+                            br_segments = segments.select{|s| s['name'].start_with?"br"} rescue []
                             segment["name"] = "br" + (br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = false
                         end                     
                                                   
                         @segments.push(segment)
+                        @segments = WizardHelper.refresh_segments @segments
                     end
-
                 end
 
             when "Delete segment"
@@ -732,6 +709,7 @@ EOF
                     checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
+                    checklist_selected_items = checklist_selected_items.first.split(' ') rescue []
                     checklist_selected_items.each do |segment|
                         # Store the segments to be deleted in @delete_segments
                         @segments.each{ |s|  @deleted_segments.push(s) if s["name"] == segment }
@@ -739,15 +717,7 @@ EOF
                         @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?                        
                     end
 
-                    # Reorganice segment names
-                    @segments.each_with_index do |segment, index|
-                        if segment["name"].start_with?"br" 
-                          segment["name"] = "br#{index}" 
-                        else 
-                          segment["name"] = "bpbr#{index}"
-                        end
-                        @segments[index] = segment
-                    end
+                    @segments = WizardHelper.refresh_segments @segments
                 end
             else
                 # Cancel pressed

@@ -23,6 +23,7 @@ Main package to install redborder ips in Rocky Linux 9
 
 ## License and Authors
 
+- Luis Blanco <ljblanco@redborder.com>
 - Miguel Negrón <manegron@redborder.com>
 - David Vanhoucke <dvanhoucke@redborder.com>
 

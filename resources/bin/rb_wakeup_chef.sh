@@ -5,9 +5,8 @@ source /etc/init.d/functions
 source /etc/profile
 
 function usage() {
-    echo "$0 [ -l ] [ -c ] [ -s <service_name> ] [ -i ] [ -n <nodename> ]"
+    echo "$0 [ -l ] [ -s <service_name> ] [ -i ] [ -n <nodename> ]"
     echo "  * -l -> show logs after the wakeup"
-    echo "  * -c -> wakeup full cluster"
     #echo "  * -i -> wakeup sensor nodes"
     #echo "  * -n <nodename> -> wakeup sensor/manager node name"
     echo "  * -s <service> -> wakeup manager with this service name enabled"
@@ -39,30 +38,19 @@ function wakeup_node_service() {
     fi
 }
 
-wmanagers=0
 showlogs=0
 service=""
 
-while getopts "hcs:l" name
+while getopts "hs:l" name
 do
   case $name in
-    h) usage;;
-    c) wmanagers=1;;
     l) showlogs=1;;
     s) service="$OPTARG";;
+    *) usage;;
   esac
 done
 
-if [ $wmanagers -eq 1 ]; then
-  if [ "x$service" == "x" ]; then
-    /usr/bin/serf query -timeout=250ms -no-ack wakeup-chef &>/dev/null
-  else
-    # TODO
-    wakeup_node_service $service &>/dev/null #Only wakeup in local node if the service exists
-  fi
-else
-  wakeup
-fi
+wakeup
 
 if [ $showlogs -eq 1 ]; then
   echo "Showing chef-client logs on $(hostname): "
