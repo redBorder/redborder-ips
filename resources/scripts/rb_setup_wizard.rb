@@ -317,18 +317,6 @@ end
 ################
 # Registration #
 ################
-make_registration = true
-unless init_conf_cloud_address.nil?
-    dialog = MRDialog.new
-    dialog.clear = true
-    dialog.title = "Confirm configuration"
-    text = <<EOF
-
-There was a previous wizard execution and your IPS may had been registered already, do you want to register again?
-
-EOF
-    make_registration = dialog.yesno(text,0,0)
-end
 
 dialog = MRDialog.new
 dialog.clear = true
@@ -346,6 +334,19 @@ modes = [
 ]
 
 registration_mode = dialog.radiolist("Select mode", choices: modes)
+
+make_registration = true
+unless init_conf_cloud_address.nil?
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Confirm configuration"
+    text = <<EOF
+
+There was a previous wizard execution and your IPS may had been registered already, do you want to register again?
+
+EOF
+    make_registration = dialog.yesno(text,0,0)
+end
 
 if make_registration 
     if registration_mode == "cp"
@@ -432,9 +433,9 @@ text += "\n- Registration Mode: #{registration_mode}\n"
 if registration_mode == "cp"
     text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
 else
-    text += "WebUI host : #{general_conf['webui_host']}\n"
-    text += "WebUI user : #{general_conf['webui_user']}\n"
-    text += "WebUI pass : #{general_conf['webui_pass']}\n"
+    text += "Host : #{general_conf['webui_host']}\n"
+    text += "User : #{general_conf['webui_user']}\n"
+    text += "Pass : #{'*' * len(general_conf['webui_pass'])}\n"
     text += "IPS Sensor Name: #{general_conf['ips_node_name']}\n"
 end
 

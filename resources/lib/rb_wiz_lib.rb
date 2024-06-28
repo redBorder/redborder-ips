@@ -907,7 +907,7 @@ EOF
                 addr = form_results["Address"]
                 user = form_results["User"]
                 password = form_results["Password"]
-                node_name = form_results["Node Name"]
+                node_name = form_results["Sensor Name"]
 
                 if Config_utils.check_cloud_address(addr)
                     # need to confirm length
