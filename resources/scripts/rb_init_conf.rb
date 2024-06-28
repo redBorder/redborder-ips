@@ -353,6 +353,7 @@ if opt["r"]
     system("sudo hostnamectl set-hostname #{ips_node_name}")
     system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host}")
     if $?.exitstatus == 0
+      Config_utils.hook_hosts webui_host
       p "Sensor registered to the manager!, calling finish script..."
       system('/usr/lib/redborder/bin/rb_register_finish.sh')
     else
