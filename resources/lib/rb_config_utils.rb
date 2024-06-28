@@ -43,7 +43,7 @@ module Config_utils
     end
 
     # Function to get my own ip address
-    def get_ip_address
+    def self.get_ip_address
       ip = Socket.ip_address_list.detect(&:ipv4_private?).ip_address
       ip
     end

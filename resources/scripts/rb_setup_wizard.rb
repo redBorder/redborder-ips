@@ -348,7 +348,7 @@ modes = [
 registration_mode = dialog.radiolist("Select mode", choices: modes)
 
 if make_registration 
-    if registration_mode = "cp"
+    if registration_mode == "cp"
         ###############################
         # CLOUD ADDRESS CONFIGURATION #
         ###############################
@@ -367,7 +367,7 @@ if make_registration
         init_conf_webui_address_conf = RegularRegistration.new
         init_conf_webui_address_conf.doit # launch wizard
         cancel_wizard if init_conf_webui_address_conf.cancel
-        general_conf["webui_address"] = init_conf_webui_address_conf.conf[:host]
+        general_conf["webui_host"] = init_conf_webui_address_conf.conf[:host]
         general_conf["webui_user"] = init_conf_webui_address_conf.conf[:user]   
         general_conf["webui_pass"] = init_conf_webui_address_conf.conf[:pass]
         general_conf["ips_node_name"] = init_conf_webui_address_conf.conf[:node_name]      
@@ -429,7 +429,7 @@ end
 text += "\n- Make Registration: #{make_registration}\n"
 text += "\n- Registration Mode: #{registration_mode}\n"
 
-if registration_mode = "cp"
+if registration_mode == "cp"
     text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
 else
     text += "WebUI host : #{general_conf['webui_host']}\n"
