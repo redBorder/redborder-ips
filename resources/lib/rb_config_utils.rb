@@ -43,6 +43,46 @@ module Config_utils
       File.write('/etc/hosts', hosts_content)
     end
 
+    # Replace chef server urls
+    def replace_chef_server_url
+      chef_paths = [
+        '/etc/chef/client.rb.default',
+        '/etc/chef/client.rb',
+        '/etc/chef/knife.rb.default',
+        '/etc/chef/knife.rb'
+      ]
+    
+      chef_paths.each do |file_path|
+        if File.file?(file_path)
+          file_content = File.read(file_path)
+          
+          file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url "https://erchef.service/organizations/redborder"')
+          
+          File.write(file_path, file_content)
+        end
+      end
+    end
+
+    # Function to remove lines matching a pattern from specific files
+    def remove_ssl_verify_mode_lines
+      file_paths = [
+        '/etc/chef/client.rb.default',
+        '/etc/chef/client.rb'
+      ]
+
+      pattern = /^\s*ssl_verify_mode/
+
+      file_paths.each do |file_path|
+        if File.file?(file_path)
+          lines = File.readlines(file_path)
+          lines.reject! { |line| line.match?(pattern) }
+          File.open(file_path, 'w') do |file|
+            file.puts lines
+          end
+        end
+      end
+    end
+
     # Function to generate a random nodename
     # it will retrieve a random host for regular ips registration to the manager
     def self.generate_random_hostname

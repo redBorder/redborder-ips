@@ -354,6 +354,8 @@ if opt["r"]
     system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host}")
     if $?.exitstatus == 0
       Config_utils.hook_hosts webui_host
+      Config_utils.replace_chef_server_url
+      Config_utils.remove_ssl_verify_mode_lines
       p "Sensor registered to the manager!, calling finish script..."
       system('/usr/lib/redborder/bin/rb_register_finish.sh')
     else
