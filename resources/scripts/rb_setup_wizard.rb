@@ -435,7 +435,7 @@ else
     text += "WebUI host : #{general_conf['webui_host']}\n"
     text += "WebUI user : #{general_conf['webui_user']}\n"
     text += "WebUI pass : #{general_conf['webui_pass']}\n"
-    text += "IPS Node Name: #{general_conf['ips_node_name']}\n"
+    text += "IPS Sensor Name: #{general_conf['ips_node_name']}\n"
 end
 
 text += "\nPlease, is this configuration ok?\n \n"

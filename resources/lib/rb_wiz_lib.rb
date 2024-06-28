@@ -883,7 +883,7 @@ EOF
             items.push(data.to_a)
 
             # Node name
-            label = "Node Name"
+            label = "Sensor Name"
             data = form_data.new
             data.label = label
             data.ly = 4
