@@ -879,7 +879,7 @@ EOF
             data.ix = 16
             data.flen = 253
             data.ilen = 0
-            data.attr = 0
+            data.attr = 'password'
             items.push(data.to_a)
 
             # Node name
