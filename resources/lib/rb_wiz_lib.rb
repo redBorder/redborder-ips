@@ -810,6 +810,50 @@ EOF
 
 end
 
+class ModeConf < WizConf
+
+    attr_accessor :conf, :cancel
+
+    def initialize()
+        @cancel = false
+        @conf = ""
+    end
+
+    def doit
+
+        modelist = [
+            {"name"=>"proxy", "description"=>"Register IPS sensor in proxy mode"},
+            {"name"=>"ssh", "description"=>"Register IPS sensor in legacy mode"}
+            ] # default values
+
+        dialog = MRDialog.new
+        dialog.clear = true
+        text = <<EOF
+
+Please, select mode of registration of the IPS
+EOF
+        items = []
+        radiolist_data = Struct.new(:tag, :item, :select)
+
+        modelist.each do |m|
+            data = radiolist_data.new
+            data.tag = m['name']
+            data.item = m['description']
+            data.select = m['name'] == 'full' ? true : false
+            items.push(data.to_a)
+        end
+
+        dialog.title = "Set registration method"
+        selected_item = dialog.radiolist(text, items)
+
+        if dialog.exit_code == dialog.dialog_ok
+            @conf = selected_item
+        else
+            @cancel = true
+        end
+    end
+end
+
 class RegularRegistration < WizConf
 
     attr_accessor :conf, :cancel
@@ -873,10 +917,10 @@ EOF
             label = "Sensor Name"
             data = form_data.new
             data.label = label
-            data.ly = 4
+            data.ly = 3
             data.lx = 1
             data.item = Config_utils.generate_random_hostname
-            data.iy = 4
+            data.iy = 3
             data.ix = 16
             data.flen = 253
             data.ilen = 0
@@ -897,7 +941,6 @@ EOF
             data.ix = 16
             data.flen = 253
             data.ilen = 0
-            data.attr = 0
             passitems.push(data.to_a)
 
             dialog.title = "WebUI Password configuration"

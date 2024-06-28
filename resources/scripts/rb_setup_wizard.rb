@@ -318,22 +318,9 @@ end
 # Registration #
 ################
 
-dialog = MRDialog.new
-dialog.clear = true
-dialog.title = "Select registration mode"
-text = <<EOF
-
-You can register the sensor using Regular mode or Proxy mode, select from the list
-
-EOF
-dialog.msgbox(text)
-
-modes = [
-  ["regular", "Regular mode", false],
-  ["cp", "Proxy mode", false]
-]
-
-registration_mode = dialog.radiolist("Select mode", choices: modes)
+registration_mode = ModeConf.new
+registration_mode.doit
+general_conf["registration_mode"] = registration_mode.conf      
 
 make_registration = true
 unless init_conf_cloud_address.nil?
