@@ -839,6 +839,7 @@ Do not use http:// or https:// in front, introduce the URL domain name of the ma
 
 EOF
             items = []
+            passitems = []
             form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen, :attr)
 
             label = "Address"
@@ -868,20 +869,6 @@ EOF
             data.attr = 0
             items.push(data.to_a)
 
-            # Password input
-            label = "Password"
-            data = form_data.new
-            data.label = label
-            data.ly = 3
-            data.lx = 1
-            data.item = @conf["pass"]
-            data.iy = 3
-            data.ix = 16
-            data.flen = 253
-            data.ilen = 0
-            data.attr = 'password'
-            items.push(data.to_a)
-
             # Node name
             label = "Sensor Name"
             data = form_data.new
@@ -899,14 +886,31 @@ EOF
             dialog.title = "WebUI Sensor Registration Configuration"
             form_results = dialog.mixedform(text, items, 24, 60, 0)
 
-            if form_results.empty?
+            # Password input
+            label = "Password"
+            data = form_data.new
+            data.label = label
+            data.ly = 1
+            data.lx = 1
+            data.item = @conf["pass"]
+            data.iy = 1
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            passitems.push(data.to_a)
+
+            dialog.title = "WebUI Password configuration"
+            form_results_password = dialog.passwordform(text, passitems, 24, 60, 0)
+
+            if form_results.empty? or form_results_password.empty?
                 # Cancel button pushed
                 @cancel = true
                 break
             else
                 addr = form_results["Address"]
                 user = form_results["User"]
-                password = form_results["Password"]
+                password = form_results_password["Password"]
                 node_name = form_results["Sensor Name"]
 
                 if Config_utils.check_cloud_address(addr)
