@@ -42,7 +42,7 @@ http = Net::HTTP.new(opt['m'], 443)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-path = '/sensors/associate_v2.json'
+path = '/sensors/associate.json'
 
 data = { 'username' => opt['u'], 'password' => opt['p'], 'sensor_name' => client_name, 'ipaddress' => opt['i'] }
 
