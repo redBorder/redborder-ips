@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'socket'
 require 'digest'
 require 'base64'
 require 'yaml'
@@ -30,6 +31,21 @@ module Config_utils
             end
         end
         ret
+    end
+
+    # Function to generate a random nodename
+    # it will retrieve a random host for regular ips registration to the manager
+    def self.generate_random_hostname
+      characters = ('a'..'z').to_a + ('0'..'9').to_a
+      random_id = Array.new(8) { characters.sample }.join
+      hostname = "rbips-#{random_id}"
+      hostname
+    end
+
+    # Function to get my own ip address
+    def get_ip_address
+      ip = Socket.ip_address_list.detect(&:ipv4_private?).ip_address
+      ip
     end
 
     # Function to check a valid IPv4 IP address

@@ -37,7 +37,19 @@ local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
 
 init_conf = YAML.load_file(INITCONF)
 
-cloud_address = init_conf['cloud_address']
+registration_mode = init_conf['registration_mode']
+
+if registration_mode = "cp"
+  cloud_address = init_conf['cloud_address']
+else
+  webui_address = init_conf['webui_host']
+
+  webui_user = init_conf['webui_user']
+
+  webui_pass = init_conf['webui_pass']
+
+  ips_node_name = init_conf['ips_node_name']
+end
 
 network = init_conf['network']
 
@@ -329,11 +341,20 @@ system('service kdump start')
 # configure cloud address #
 ###########################
 if opt["r"]
-  if Config_utils.check_cloud_address(cloud_address)
-    IPSOPTS="-t ips -i -d -f"
-    system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")
+  if registration_mode = "cp"
+    if Config_utils.check_cloud_address(cloud_address)
+      IPSOPTS="-t ips -i -d -f"
+      system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")
+    else
+      p err_msg = "Invalid cloud address. Please review #{INITCONF} file"
+      exit 1
+    end
   else
-    p err_msg = "Invalid cloud address. Please review #{INITCONF} file"
-    exit 1
+    system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host}")
+    if $?.exitstatus == 0
+      system('/usr/lib/redborder/bin/rb_register_finish.sh')
+    else
+      puts "Error: rb_associate_sensor.rb failed with exit status #{$?.exitstatus}. Please review #{INITCONF} file or network configuration..."
+    end
   end
 end
