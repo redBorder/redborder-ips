@@ -15,6 +15,7 @@
 ## along with redBorder. If not, see <http://www.gnu.org/licenses/>.
 ########################################################################
 
+require 'fileutils'
 require 'json'
 require "socket"
 require "getopt/std"
@@ -71,9 +72,9 @@ dir_paths = [
   '/home/redborder/.chef/trusted_certs'
 ]
 
-# Ensure dirs exists before saving
+# Ensure dirs exist before saving
 dir_paths.each do |path|
-  Dir.mkdir(path) unless Dir.exist?(path)
+  FileUtils.mkdir_p(path) unless File.directory?(path)
 end
 
 # Create /etc/chef/client.pem file
