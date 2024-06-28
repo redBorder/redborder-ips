@@ -42,7 +42,7 @@ registration_mode = init_conf['registration_mode']
 if registration_mode == "cp"
   cloud_address = init_conf['cloud_address']
 else
-  webui_address = init_conf['webui_host']
+  webui_host = init_conf['webui_host']
 
   webui_user = init_conf['webui_user']
 
@@ -350,6 +350,7 @@ if opt["r"]
       exit 1
     end
   else
+    system("sudo hostnamectl set-hostname #{ips_node_name}")
     system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host}")
     if $?.exitstatus == 0
       p "Sensor registered to the manager!, calling finish script..."
