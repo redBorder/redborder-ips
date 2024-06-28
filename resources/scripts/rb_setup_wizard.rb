@@ -422,7 +422,7 @@ if registration_mode == "cp"
 else
     text += "Host : #{general_conf['webui_host']}\n"
     text += "User : #{general_conf['webui_user']}\n"
-    text += "Pass : #{'*' * len(general_conf['webui_pass'])}\n"
+    text += "Pass : #{'*' * general_conf['webui_pass'].length}\n"
     text += "IPS Sensor Name: #{general_conf['ips_node_name']}\n"
 end
 
