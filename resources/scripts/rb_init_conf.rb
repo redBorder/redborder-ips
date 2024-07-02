@@ -355,7 +355,7 @@ if opt["r"]
     if $?.exitstatus == 0
       Config_utils.hook_hosts webui_host
       Config_utils.replace_chef_server_url
-      Config_utils.remove_ssl_verify_mode_lines
+      # Config_utils.remove_ssl_verify_mode_lines
       p "Sensor registered to the manager!, calling finish script..."
       system('/usr/lib/redborder/bin/rb_register_finish.sh')
     else
