@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'socket'
 require 'digest'
 require 'base64'
 require 'yaml'
@@ -30,6 +31,70 @@ module Config_utils
             end
         end
         ret
+    end
+
+    # Generate hosts for ips to send data to the manager
+    def self.hook_hosts(domain)
+      hosts_content = File.read('/etc/hosts')
+      hosts_content.gsub!(/^.*\bdata\.redborder\.cluster\b.*$/, '')
+      hosts_content.gsub!(/^.*\brbookshelf\.s3\.redborder\.cluster\b.*$/, '')
+      hosts_content << "#{domain} data.redborder.cluster kafka.service kafka.redborder.cluster erchef.redborder.cluster rbookshelf.s3.redborder.cluster redborder.cluster s3.service erchef.service http2k.service webui.service\n"
+      File.write('/etc/hosts', hosts_content)
+    end
+
+    # Replace chef server urls
+    def self.replace_chef_server_url
+      chef_paths = [
+        '/etc/chef/client.rb.default',
+        '/etc/chef/client.rb',
+        '/etc/chef/knife.rb.default',
+        '/etc/chef/knife.rb'
+      ]
+    
+      chef_paths.each do |file_path|
+        if File.file?(file_path)
+          file_content = File.read(file_path)
+          
+          file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url "https://erchef.service/organizations/redborder"')
+          
+          File.write(file_path, file_content)
+        end
+      end
+    end
+
+    # Function to remove lines matching a pattern from specific files
+    def self.remove_ssl_verify_mode_lines
+      file_paths = [
+        '/etc/chef/client.rb.default',
+        '/etc/chef/client.rb'
+      ]
+
+      pattern = /^\s*ssl_verify_mode/
+
+      file_paths.each do |file_path|
+        if File.file?(file_path)
+          lines = File.readlines(file_path)
+          lines.reject! { |line| line.match?(pattern) }
+          File.open(file_path, 'w') do |file|
+            file.puts lines
+          end
+        end
+      end
+    end
+
+    # Function to generate a random nodename
+    # it will retrieve a random host for regular ips registration to the manager
+    def self.generate_random_hostname
+      characters = ('a'..'z').to_a + ('0'..'9').to_a
+      random_id = Array.new(8) { characters.sample }.join
+      hostname = "rbips-#{random_id}"
+      hostname
+    end
+
+    # Function to get my own ip address
+    def self.get_ip_address
+      ip = Socket.ip_address_list.detect(&:ipv4_private?).ip_address
+      ip
     end
 
     # Function to check a valid IPv4 IP address
