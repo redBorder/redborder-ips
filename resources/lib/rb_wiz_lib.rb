@@ -823,8 +823,8 @@ class ModeConf < WizConf
 
         modelist = [
             {"name"=>"proxy", "description"=>"Register IPS sensor in proxy mode"},
-            {"name"=>"ssh", "description"=>"Register IPS sensor in legacy mode"}
-            ] # default values
+            {"name"=>"manager", "description"=>"Register IPS sensor to a manager"}
+            ]
 
         dialog = MRDialog.new
         dialog.clear = true

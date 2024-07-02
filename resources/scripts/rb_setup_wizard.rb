@@ -337,7 +337,7 @@ EOF
 end
 
 if make_registration 
-    if registration_mode == "cp"
+    if registration_mode == "proxy"
         ###############################
         # CLOUD ADDRESS CONFIGURATION #
         ###############################
@@ -415,7 +415,7 @@ end
 text += "\n- Make Registration: #{make_registration}\n"
 text += "    Mode: #{registration_mode}\n"
 
-if registration_mode == "cp"
+if registration_mode == "proxy"
     text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
 else
     text += "    Host : #{general_conf['webui_host']}\n"

@@ -39,7 +39,7 @@ init_conf = YAML.load_file(INITCONF)
 
 registration_mode = init_conf['registration_mode']
 
-if registration_mode == "cp"
+if registration_mode == "proxy"
   cloud_address = init_conf['cloud_address']
 else
   webui_host = init_conf['webui_host']
@@ -341,7 +341,7 @@ system('service kdump start')
 # configure cloud address #
 ###########################
 if opt["r"]
-  if registration_mode == "cp"
+  if registration_mode == "proxy"
     if Config_utils.check_cloud_address(cloud_address)
       IPSOPTS="-t ips -i -d -f"
       system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")

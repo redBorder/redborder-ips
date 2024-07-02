@@ -38,8 +38,7 @@ module Config_utils
       hosts_content = File.read('/etc/hosts')
       hosts_content.gsub!(/^.*\bdata\.redborder\.cluster\b.*$/, '')
       hosts_content.gsub!(/^.*\brbookshelf\.s3\.redborder\.cluster\b.*$/, '')
-      hosts_content << "#{domain} data.redborder.cluster kafka.redborder.cluster erchef.redborder.cluster rbookshelf.s3.redborder.cluster redborder.cluster s3.service erchef.service http2k.service webui.service\n"
-      hosts_content.gsub!(/^.*\bkafka\.service\b.*$/, '')
+      hosts_content << "#{domain} data.redborder.cluster kafka.service kafka.redborder.cluster erchef.redborder.cluster rbookshelf.s3.redborder.cluster redborder.cluster s3.service erchef.service http2k.service webui.service\n"
       File.write('/etc/hosts', hosts_content)
     end
 
