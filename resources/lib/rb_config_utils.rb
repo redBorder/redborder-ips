@@ -44,7 +44,7 @@ module Config_utils
     end
 
     # Replace chef server urls
-    def replace_chef_server_url
+    def self.replace_chef_server_url
       chef_paths = [
         '/etc/chef/client.rb.default',
         '/etc/chef/client.rb',
@@ -64,7 +64,7 @@ module Config_utils
     end
 
     # Function to remove lines matching a pattern from specific files
-    def remove_ssl_verify_mode_lines
+    def self.remove_ssl_verify_mode_lines
       file_paths = [
         '/etc/chef/client.rb.default',
         '/etc/chef/client.rb'
