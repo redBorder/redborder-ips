@@ -873,6 +873,10 @@ class RegularRegistration < WizConf
             dialog = MRDialog.new
             dialog.clear = true
             dialog.insecure = true
+            textpassword = <<EOF
+
+Please, set password of the manager (web) to connect to
+EOF
             text = <<EOF
 
 Please, set user and password of the manager
@@ -885,6 +889,7 @@ EOF
             items = []
             passitems = []
             form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen, :attr)
+            form_password = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen)
 
             label = "Address"
             data = form_data.new
@@ -932,7 +937,7 @@ EOF
 
             # Password input
             label = "Password"
-            data = form_data.new
+            data = form_password.new
             data.label = label
             data.ly = 1
             data.lx = 1
@@ -944,7 +949,7 @@ EOF
             passitems.push(data.to_a)
 
             dialog.title = "WebUI Password configuration"
-            form_results_password = dialog.passwordform(text, passitems, 24, 60, 0)
+            form_results_password = dialog.passwordform(textpassword, passitems, 24, 60, 0)
 
             if form_results.empty? or form_results_password.empty?
                 # Cancel button pushed

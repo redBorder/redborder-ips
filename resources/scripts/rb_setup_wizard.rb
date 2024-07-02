@@ -70,7 +70,7 @@ puts "\033]0;redborder - setup wizard\007"
 
 general_conf = {
     "webui_address" => "localhost",
-    "registration_mode" => "cloud",
+    "registration_mode" => "cp",
     "cloud_address" => "rblive.redborder.com",
     "network" => {
         "interfaces" => [],
@@ -320,7 +320,8 @@ end
 
 registration_mode = ModeConf.new
 registration_mode.doit
-general_conf["registration_mode"] = registration_mode.conf      
+general_conf["registration_mode"] = registration_mode.conf.to_s
+registration_mode = general_conf["registration_mode"]
 
 make_registration = true
 unless init_conf_cloud_address.nil?
@@ -361,9 +362,6 @@ if make_registration
         general_conf["ips_node_name"] = init_conf_webui_address_conf.conf[:node_name]      
     end
 end
-
-# Save the registration mode for the setup wizard
-general_conf["registration_mode"] = registration_mode
 
 ###############################
 #     BUILD DESCRIPTION       #
@@ -415,15 +413,15 @@ unless general_conf["segments"].nil? or general_conf["segments"].empty?
 end
 
 text += "\n- Make Registration: #{make_registration}\n"
-text += "\n- Registration Mode: #{registration_mode}\n"
+text += "    Mode: #{registration_mode}\n"
 
 if registration_mode == "cp"
     text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
 else
-    text += "Host : #{general_conf['webui_host']}\n"
-    text += "User : #{general_conf['webui_user']}\n"
-    text += "Pass : #{'*' * general_conf['webui_pass'].length}\n"
-    text += "IPS Sensor Name: #{general_conf['ips_node_name']}\n"
+    text += "    Host : #{general_conf['webui_host']}\n"
+    text += "    User : #{general_conf['webui_user']}\n"
+    text += "    Pass : #{'*' * general_conf['webui_pass'].length}\n"
+    text += "    Sensor Name: #{general_conf['ips_node_name']}\n"
 end
 
 text += "\nPlease, is this configuration ok?\n \n"
