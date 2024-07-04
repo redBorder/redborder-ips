@@ -17,7 +17,7 @@ opt = Getopt::Std.getopts("f")
 
 # Load old configuration if any
 init_conf = YAML.load_file(CONFFILE) rescue nil
-init_conf_webui_address = init_conf['webui_address'] rescue nil
+init_conf_webui_address = init_conf['webui_host'] rescue nil
 init_conf_cloud_address = init_conf['cloud_address'] rescue nil
 init_conf_network = init_conf['network'] rescue nil
 init_conf_segments = init_conf['segments'] || [] rescue []
@@ -324,7 +324,7 @@ general_conf["registration_mode"] = registration_mode.conf.to_s
 registration_mode = general_conf["registration_mode"]
 
 make_registration = true
-unless init_conf_cloud_address.nil?
+unless init_conf_cloud_address.nil? || init_conf_webui_address.nil?
     dialog = MRDialog.new
     dialog.clear = true
     dialog.title = "Confirm configuration"
