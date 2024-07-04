@@ -356,8 +356,9 @@ if opt["r"]
       Config_utils.hook_hosts webui_host
       Config_utils.replace_chef_server_url
       # Config_utils.remove_ssl_verify_mode_lines
-      p "Sensor registered to the manager!, calling finish script..."
-      system('/usr/lib/redborder/bin/rb_register_finish.sh')
+      puts "Sensor registered to the manager!, please wait..."
+      system('/usr/lib/redborder/bin/rb_register_finish.sh > /dev/null 2>&1')
+      puts "Registration and configuration finished!"
     else
       puts "Error: rb_associate_sensor.rb failed with exit status #{$?.exitstatus}. Please review #{INITCONF} file or network configuration..."
     end
