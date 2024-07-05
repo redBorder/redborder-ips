@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 
+require 'net/http'
+require 'openssl'
+require 'uri'
 require 'socket'
 require 'digest'
 require 'base64'
@@ -88,6 +91,30 @@ module Config_utils
         File.open(file_path, 'w') do |file|
           file.write(JSON.pretty_generate(content))
         end
+      end
+    end
+
+    # Check credentials of the manager are correct
+    def self.check_manager_credentials(host, user, pass)
+      url = URI("https://#{host}/api/v1/users/login")
+      params = { 'user[username]' => user, 'user[password]' => pass }
+      headers = { 'Accept' => 'application/json' }
+    
+      begin
+        http = Net::HTTP.new(url.host, url.port)
+        http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE 
+    
+        response = http.post(url.path, URI.encode_www_form(params), headers)
+    
+        if response.is_a?(Net::HTTPSuccess)
+          return true
+        else
+          return false
+        end
+      rescue StandardError => e
+        puts "Error: #{e.message}"
+        return false
       end
     end
 

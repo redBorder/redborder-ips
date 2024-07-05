@@ -961,27 +961,24 @@ EOF
                 password = form_results_password["Password"]
                 node_name = form_results["Sensor Name"]
 
-                if Config_utils.check_cloud_address(addr)
-                    # need to confirm length
-                    if addr.length < 254
-                        @conf[:host] = addr
-                        @conf[:user] = user
-                        @conf[:pass] = password
-                        @conf[:node_name] = node_name
-                        break
-                    end
+                if Config_utils.check_manager_credentials(addr, user, password)
+                    @conf[:host] = addr
+                    @conf[:user] = user
+                    @conf[:pass] = password
+                    @conf[:node_name] = node_name
+                    break
                 end
             end
 
             # error, do another loop
             dialog = MRDialog.new
             dialog.clear = true
-            dialog.title = "ERROR in name configuration"
+            dialog.title = "ERROR when trying to login to the manager"
             text = <<EOF
 
-We have detected an error in address configuration.
+We have detected an error while checking login credentials.
 
-Please, review character set and length for name configuration.
+Please, review host of the manager, username and password configuration.
 EOF
             dialog.msgbox(text, 10, 41)
         end
