@@ -866,8 +866,8 @@ class RegularRegistration < WizConf
     def doit
         host = {}
         @conf["host"] = "localhost"
-        @conf["user"] = "root"
-        @conf["pass"] = "redborder"
+        @conf["user"] = "admin"
+        @conf["pass"] = ""
         
         loop do
             dialog = MRDialog.new
