@@ -359,6 +359,8 @@ if opt["r"]
       puts "Sensor registered to the manager!, please wait..."
       system('/usr/lib/redborder/bin/rb_register_finish.sh > /dev/null 2>&1')
       puts "Registration and configuration finished!"
+      # re-do replace_chef_server_url for updating existing knife in /root/.chef/knife.rb
+      Config_utils.replace_chef_server_url      
     else
       puts "Error: rb_associate_sensor.rb failed with exit status #{$?.exitstatus}. Please review #{INITCONF} file or network configuration..."
     end

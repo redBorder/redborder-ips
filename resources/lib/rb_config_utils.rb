@@ -49,52 +49,44 @@ module Config_utils
         '/etc/chef/client.rb.default',
         '/etc/chef/client.rb',
         '/etc/chef/knife.rb.default',
-        '/etc/chef/knife.rb'
+        '/etc/chef/knife.rb',
+        '/root/.chef/knife.rb'
       ]
     
       chef_paths.each do |file_path|
         if File.file?(file_path)
           file_content = File.read(file_path)
           
-          file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url "https://erchef.service/organizations/redborder"')
-          
+          file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url          "https://erchef.service/organizations/redborder"')
+          file_content.gsub!(/^chef_server_url\s+'.*'/, "chef_server_url          'https://erchef.service/organizations/redborder'")
+
           File.write(file_path, file_content)
         end
       end
     end
 
-    # Set role for chef role once
+    # Set role for chef
     def self.update_chef_roles(mode)
-      file_paths = ['/etc/chef/role-once.json.default', '/etc/chef/role-sensor.json.default']
+      file_paths = [
+        '/etc/chef/role-once.json.default',
+        '/etc/chef/role.json.default'
+      ]
 
-      content = case mode
-                when "proxy"
-                  {
-                    "run_list": [
-                      "role[sensor]",
-                      "role[ipscp-sensor]"
-                    ],
-                    "redBorder": {
-                      "force-run-once": true
-                    }
-                  }
-                else
-                  {
-                    "run_list": [
-                      "role[sensor]",
-                      "role[ips-sensor]"
-                    ],
-                    "redBorder": {
-                      "force-run-once": true
-                    }
-                  }
-                end
+      content = {
+        "run_list": [
+          "role[sensor]",
+          mode == "proxy" ? "role[ipscp-sensor]" : "role[ips-sensor]"
+        ],
+        "redBorder": {
+          "force-run-once": true
+        }
+      }
 
       file_paths.each do |file_path|
         FileUtils.mkdir_p(File.dirname(file_path))
 
         File.open(file_path, 'w') do |file|
-          file.write(content.to_json)
+          file.write(JSON.pretty_generate(content))
         end
       end
     end
