@@ -107,11 +107,7 @@ module Config_utils
     
         response = http.post(url.path, URI.encode_www_form(params), headers)
     
-        if response.is_a?(Net::HTTPSuccess)
-          return true
-        else
-          return false
-        end
+        return response.code == '200'
       rescue StandardError => e
         puts "Error: #{e.message}"
         return false
