@@ -341,6 +341,7 @@ system('service kdump start')
 # configure cloud address #
 ###########################
 if opt["r"]
+  Config_utils.update_chef_roles registration_mode
   if registration_mode == "proxy"
     if Config_utils.check_cloud_address(cloud_address)
       IPSOPTS="-t ips -i -d -f"
@@ -355,7 +356,6 @@ if opt["r"]
     if $?.exitstatus == 0
       Config_utils.hook_hosts webui_host
       Config_utils.replace_chef_server_url
-      # Config_utils.remove_ssl_verify_mode_lines
       puts "Sensor registered to the manager!, please wait..."
       system('/usr/lib/redborder/bin/rb_register_finish.sh > /dev/null 2>&1')
       puts "Registration and configuration finished!"

@@ -8,6 +8,7 @@ require 'net/ip'
 require 'system/getifaddrs'
 require 'netaddr'
 require 'base64'
+require 'fileutils'
 
 module Config_utils
 
@@ -58,6 +59,42 @@ module Config_utils
           file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url "https://erchef.service/organizations/redborder"')
           
           File.write(file_path, file_content)
+        end
+      end
+    end
+
+    # Set role for chef role once
+    def self.update_chef_roles(mode)
+      file_paths = ['/etc/chef/role-once.json.default', '/etc/chef/role-sensor.json.default']
+
+      content = case mode
+                when "proxy"
+                  {
+                    "run_list": [
+                      "role[sensor]",
+                      "role[ipscp-sensor]"
+                    ],
+                    "redBorder": {
+                      "force-run-once": true
+                    }
+                  }
+                else
+                  {
+                    "run_list": [
+                      "role[sensor]",
+                      "role[ips-sensor]"
+                    ],
+                    "redBorder": {
+                      "force-run-once": true
+                    }
+                  }
+                end
+
+      file_paths.each do |file_path|
+        FileUtils.mkdir_p(File.dirname(file_path))
+
+        File.open(file_path, 'w') do |file|
+          file.write(content.to_json)
         end
       end
     end
