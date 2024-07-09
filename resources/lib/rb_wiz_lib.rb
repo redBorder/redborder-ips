@@ -865,7 +865,7 @@ class RegularRegistration < WizConf
 
     def doit
         host = {}
-        @conf["host"] = "localhost"
+        @conf["host"] = "rblive.redborder.com"
         @conf["user"] = "admin"
         @conf["pass"] = ""
         
