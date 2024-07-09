@@ -325,6 +325,7 @@ registration_mode = ModeConf.new
 registration_mode.doit
 general_conf["registration_mode"] = registration_mode.conf.to_s
 registration_mode = general_conf["registration_mode"]
+cancel_wizard if registration_mode.cancel
 
 make_registration = true
 unless init_conf_cloud_address.nil? || init_conf_webui_address.nil?

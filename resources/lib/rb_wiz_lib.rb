@@ -846,10 +846,10 @@ EOF
         dialog.title = "Set registration method"
         selected_item = dialog.radiolist(text, items)
 
-        if dialog.exit_code == dialog.dialog_ok
-            @conf = selected_item
-        else
+        if dialog.exit_code == dialog.dialog_cancel
             @cancel = true
+        elsif dialog.exit_code == dialog.dialog_ok
+            @conf = selected_item
         end
     end
 end
@@ -935,6 +935,12 @@ EOF
             dialog.title = "WebUI Sensor Registration Configuration"
             form_results = dialog.mixedform(text, items, 24, 60, 0)
 
+            if form_results.empty?
+                # Cancel button pushed
+                @cancel = true
+                break
+            end
+
             # Password input
             label = "Password"
             data = form_password.new
@@ -951,7 +957,7 @@ EOF
             dialog.title = "WebUI Password configuration"
             form_results_password = dialog.passwordform(textpassword, passitems, 24, 60, 0)
 
-            if form_results.empty? or form_results_password.empty?
+            if form_results_password.empty?
                 # Cancel button pushed
                 @cancel = true
                 break
