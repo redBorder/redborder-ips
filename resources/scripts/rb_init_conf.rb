@@ -356,8 +356,9 @@ if opt["r"]
     if $?.exitstatus == 0
       Config_utils.hook_hosts webui_host
       Config_utils.replace_chef_server_url
-      puts "Sensor registered to the manager!, please wait..."
-      system('/usr/lib/redborder/bin/rb_register_finish.sh > /dev/null 2>&1')
+      Config_utils.ensure_log_file_exists
+      puts "Sensor registered to the manager, you can see logs in /var/log/rb-register-common/register.log, please wait..."
+      system('/usr/lib/redborder/bin/rb_register_finish.sh > /var/log/rb-register-common/register.log 2>&1')
       puts "Registration and configuration finished!" 
     else
       puts "Error: rb_associate_sensor.rb failed with exit status #{$?.exitstatus}. Please review #{INITCONF} file or network configuration..."
