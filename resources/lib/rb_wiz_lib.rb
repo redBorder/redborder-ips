@@ -839,7 +839,7 @@ EOF
             data = radiolist_data.new
             data.tag = m['name']
             data.item = m['description']
-            data.select = m['name'] == 'full' ? true : false
+            data.select = m['name'] == 'manager' ? true : false
             items.push(data.to_a)
         end
 
