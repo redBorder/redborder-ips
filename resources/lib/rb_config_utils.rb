@@ -37,8 +37,21 @@ module Config_utils
         ret
     end
 
+    # Resolve manager dns name to ip
+    def self.managerToIp(str)
+      ipv4_regex = /\A(\d{1,3}\.){3}\d{1,3}\z/
+      ipv6_regex = /\A(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\z/
+      dns_regex = /\A[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\z/
+      return str if str =~ ipv4_regex || str =~ ipv6_regex
+      if str =~ dns_regex
+        ip = `dig +short #{str}`.strip
+        return ip unless ip.empty?
+      end
+    end
+
     # Generate hosts for ips to send data to the manager
     def self.hook_hosts(domain)
+      domain = managerToIp(domain)
       hosts_content = File.read('/etc/hosts')
       hosts_content.gsub!(/^.*\bdata\.redborder\.cluster\b.*$/, '')
       hosts_content.gsub!(/^.*\brbookshelf\.s3\.redborder\.cluster\b.*$/, '')
