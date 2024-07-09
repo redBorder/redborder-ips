@@ -69,7 +69,7 @@ Config_utils.net_init_bypass
 puts "\033]0;redborder - setup wizard\007"
 
 general_conf = {
-    "webui_host" => "localhost",
+    "webui_host" => "rblive.redborder.com",
     "registration_mode" => "proxy",
     "cloud_address" => "rblive.redborder.com",
     "network" => {
