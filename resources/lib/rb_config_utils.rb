@@ -41,7 +41,7 @@ module Config_utils
     def self.managerToIp(str)
       ipv4_regex = /\A(\d{1,3}\.){3}\d{1,3}\z/
       ipv6_regex = /\A(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\z/
-      dns_regex = /\A[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+\z/
+      dns_regex = /\A[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+\z/
       return str if str =~ ipv4_regex || str =~ ipv6_regex
       if str =~ dns_regex
         ip = `dig +short #{str}`.strip
