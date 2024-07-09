@@ -67,7 +67,23 @@ module Config_utils
         end
       end
     end
+    
+    # Create log file for registration without rb-registwer
+    def self.ensure_log_file_exists
+      log_directory = '/var/log/rb-register-common'
+      log_file = "#{log_directory}/register.log"
 
+      unless Dir.exist?(log_directory)
+        system("mkdir -p #{log_directory}")
+      end
+
+      if File.exist?(log_file)
+        system("truncate -s 0 #{log_file}")
+      else
+        system("touch #{log_file}")
+      end
+    end
+    
     # Set role for chef
     def self.update_chef_roles(mode)
       file_paths = [
