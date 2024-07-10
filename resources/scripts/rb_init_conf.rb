@@ -357,6 +357,7 @@ if opt["r"]
       Config_utils.hook_hosts webui_host
       Config_utils.replace_chef_server_url
       Config_utils.ensure_log_file_exists
+      system("sed -i '/webui_pass/d' /etc/redborder/rb_init_conf.yml")
       puts "Sensor registered to the manager, please wait..."
       puts "You can see logs in /var/log/rb-register-common/register.log"
       system('/usr/lib/redborder/bin/rb_register_finish.sh > /var/log/rb-register-common/register.log 2>&1')
