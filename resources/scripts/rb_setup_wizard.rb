@@ -419,9 +419,15 @@ end
 text += "\n- Make Registration: #{make_registration}\n"
 text += "    Mode: #{registration_mode}\n"
 
-if registration_mode == "proxy"
-    text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
-else
+if registration_mode == "proxy" and make_registration
+    text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
+    general_conf.delete('webui_host')
+    general_conf.delete('webui_user')
+    general_conf.delete('webui_pass')
+    general_conf.delete('ips_node_name')
+    
+elsif make_registration
+    general_conf.delete('cloud_address')
     text += "    Host : #{general_conf['webui_host']}\n"
     text += "    User : #{general_conf['webui_user']}\n"
     text += "    Pass : #{'*' * general_conf['webui_pass'].length}\n"
