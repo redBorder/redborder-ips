@@ -41,6 +41,8 @@ cp resources/etc/rb_sysconf.conf.default %{buildroot}/etc/
 chmod 0755 %{buildroot}/usr/lib/redborder/bin/*
 chmod 0755 %{buildroot}/usr/lib/redborder/scripts/*
 install -D -m 0644 resources/lib/rb_wiz_lib.rb %{buildroot}/usr/lib/redborder/lib
+install -D -m 0644 resources/lib/wiz_conf.rb %{buildroot}/usr/lib/redborder/lib
+install -D -m 0644 resources/lib/wizard_helper.rb %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/lib/rb_config_utils.rb %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/lib/rb_functions.sh %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/systemd/rb-init-conf.service %{buildroot}/usr/lib/systemd/system/rb-init-conf.service
@@ -68,6 +70,8 @@ echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 /etc/rb_sysconf.conf.default
 /etc/redborder
 /usr/lib/redborder/lib/rb_wiz_lib.rb
+/usr/lib/redborder/lib/wiz_conf.rb
+/usr/lib/redborder/lib/wizard_helper.rb
 /usr/lib/redborder/lib/rb_config_utils.rb
 /usr/lib/redborder/lib/rb_functions.sh
 /usr/lib/systemd/system/rb-init-conf.service
