@@ -17,6 +17,7 @@ opt = Getopt::Std.getopts("f")
 
 # Load old configuration if any
 init_conf = YAML.load_file(CONFFILE) rescue nil
+init_conf_webui_address = init_conf['webui_host'] rescue nil
 init_conf_cloud_address = init_conf['cloud_address'] rescue nil
 init_conf_network = init_conf['network'] rescue nil
 init_conf_segments = init_conf['segments'] || [] rescue []
@@ -68,6 +69,11 @@ Config_utils.net_init_bypass
 puts "\033]0;redborder - setup wizard\007"
 
 general_conf = {
+    "webui_host" => "rblive.redborder.com",
+    "webui_user" => "admin",
+    "ips_node_name" => "ips-sensor",
+    "webui_pass" => "",
+    "registration_mode" => "proxy",
     "cloud_address" => "rblive.redborder.com",
     "network" => {
         "interfaces" => [],
@@ -314,8 +320,15 @@ end
 ################
 # Registration #
 ################
+
+registration_mode = ModeConf.new
+registration_mode.doit
+general_conf["registration_mode"] = registration_mode.conf.to_s
+registration_mode = general_conf["registration_mode"]
+cancel_wizard if registration_mode == ""
+
 make_registration = true
-unless init_conf_cloud_address.nil?
+unless init_conf_cloud_address.nil? || init_conf_webui_address.nil?
     dialog = MRDialog.new
     dialog.clear = true
     dialog.title = "Confirm configuration"
@@ -328,15 +341,30 @@ EOF
 end
 
 if make_registration 
-    ###############################
-    # CLOUD ADDRESS CONFIGURATION #
-    ###############################
+    if registration_mode == "proxy"
+        ###############################
+        # CLOUD ADDRESS CONFIGURATION #
+        ###############################
 
-    # Conf for hostname and domain
-    cloud_address_conf = CloudAddressConf.new
-    cloud_address_conf.doit # launch wizard
-    cancel_wizard if cloud_address_conf.cancel
-    general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+        # Conf for hostname and domain
+        cloud_address_conf = CloudAddressConf.new
+        cloud_address_conf.doit # launch wizard
+        cancel_wizard if cloud_address_conf.cancel
+        general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+    else
+        ###############################
+        #      SSH CONFIGURATION      #
+        ###############################
+
+        # Conf for hostname and domain
+        init_conf_webui_address_conf = RegularRegistration.new
+        init_conf_webui_address_conf.doit # launch wizard
+        cancel_wizard if init_conf_webui_address_conf.cancel
+        general_conf["webui_host"] = init_conf_webui_address_conf.conf[:host]
+        general_conf["webui_user"] = init_conf_webui_address_conf.conf[:user]   
+        general_conf["webui_pass"] = init_conf_webui_address_conf.conf[:pass]
+        general_conf["ips_node_name"] = init_conf_webui_address_conf.conf[:node_name]      
+    end
 end
 
 ###############################
@@ -389,8 +417,22 @@ unless general_conf["segments"].nil? or general_conf["segments"].empty?
 end
 
 text += "\n- Make Registration: #{make_registration}\n"
+text += "    Mode: #{registration_mode}\n"
 
-text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
+if registration_mode == "proxy" and make_registration
+    text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
+    general_conf.delete('webui_host')
+    general_conf.delete('webui_user')
+    general_conf.delete('webui_pass')
+    general_conf.delete('ips_node_name')
+    
+elsif make_registration
+    general_conf.delete('cloud_address')
+    text += "    Host : #{general_conf['webui_host']}\n"
+    text += "    User : #{general_conf['webui_user']}\n"
+    text += "    Pass : #{'*' * general_conf['webui_pass'].length}\n"
+    text += "    Sensor Name: #{general_conf['ips_node_name']}\n"
+end
 
 text += "\nPlease, is this configuration ok?\n \n"
 

@@ -33,7 +33,7 @@ fi
 if [ "x$VAR" == "xy" -o "x$VAR" == "xY" ]; then
   e_title "Stopping services"
   
-  ds_services_stop="chef-client watchdog snort barnyard2 rb-register" #rb-register should be restarted on rb_setup_wizard
+  ds_services_stop="chef-client watchdog snortd barnyard2 rb-register" #rb-register should be restarted on rb_setup_wizard
   systemctl stop $ds_services_stop
 
   e_title "Deleting files"
@@ -45,12 +45,12 @@ if [ "x$VAR" == "xy" -o "x$VAR" == "xY" ]; then
   touch /etc/redborder/rb_init_conf.yml
 
   e_title "Generating new uuid"
-  sqlite3 /etc/rb-register.db "DELETE FROM Devices;"
+  sqlite3 /etc/rb-register.db "SELECT 1 FROM sqlite_master WHERE type='table' AND name='Devices' LIMIT 1;" | grep -q 1 && sqlite3 /etc/rb-register.db "DELETE FROM Devices;"
   cat /proc/sys/kernel/random/uuid > /etc/rb-uuid
 
   e_title "Starting registration daemons"
   rm /etc/sysconfig/rb-register
-  cp /etc/sysconfig/rb-register.default /etc/sysconfig/rb-register
+  [ -f /etc/sysconfig/rb-register.default ] && cp /etc/sysconfig/rb-register.default /etc/sysconfig/rb-register
 
   e_title "Pushing hash from rb-uuid to rb-register"
   echo HASH=\"$(cat /etc/rb-uuid)\" >> /etc/sysconfig/rb-register 

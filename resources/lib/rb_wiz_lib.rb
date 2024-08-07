@@ -810,6 +810,187 @@ EOF
 
 end
 
+class ModeConf < WizConf
+
+    attr_accessor :conf, :cancel
+
+    def initialize()
+        @cancel = false
+        @conf = ""
+    end
+
+    def doit
+
+        modelist = [
+            {"name"=>"proxy", "description"=>"Register IPS sensor in proxy mode"},
+            {"name"=>"manager", "description"=>"Register IPS sensor to a manager"}
+            ]
+
+        dialog = MRDialog.new
+        dialog.clear = true
+        text = <<EOF
+
+Please, select mode of registration of the IPS
+EOF
+        items = []
+        radiolist_data = Struct.new(:tag, :item, :select)
+
+        modelist.each do |m|
+            data = radiolist_data.new
+            data.tag = m['name']
+            data.item = m['description']
+            data.select = m['name'] == 'manager' ? true : false
+            items.push(data.to_a)
+        end
+
+        dialog.title = "Set registration method"
+        selected_item = dialog.radiolist(text, items)
+
+        if dialog.exit_code == dialog.dialog_cancel
+            @cancel = true
+        elsif dialog.exit_code == dialog.dialog_ok
+            @conf = selected_item
+        end
+    end
+end
+
+class RegularRegistration < WizConf
+
+    attr_accessor :conf, :cancel
+
+    def initialize()
+        @cancel = false
+        @conf = {}
+    end
+
+    def doit
+        host = {}
+        @conf["host"] = "rblive.redborder.com"
+        @conf["user"] = "admin"
+        @conf["pass"] = ""
+        
+        loop do
+            dialog = MRDialog.new
+            dialog.clear = true
+            dialog.insecure = true
+            textpassword = <<EOF
+
+Please, set password of the manager (web) to connect to
+EOF
+            text = <<EOF
+
+Please, set user and password of the manager
+
+This will register the sensor to the manager using the webui, so make sure it is reachable.
+
+Do not use http:// or https:// in front, introduce the URL domain name of the manager.
+
+EOF
+            items = []
+            passitems = []
+            form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen, :attr)
+            form_password = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen)
+
+            label = "Address"
+            data = form_data.new
+            data.label = label
+            data.ly = 1
+            data.lx = 1
+            data.item = @conf["host"]
+            data.iy = 1
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
+            # User input
+            label = "User"
+            data = form_data.new
+            data.label = label
+            data.ly = 2
+            data.lx = 1
+            data.item = @conf["user"]
+            data.iy = 2
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
+            # Node name
+            label = "Sensor Name"
+            data = form_data.new
+            data.label = label
+            data.ly = 3
+            data.lx = 1
+            data.item = Config_utils.generate_random_hostname
+            data.iy = 3
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
+            dialog.title = "WebUI Sensor Registration Configuration"
+            form_results = dialog.mixedform(text, items, 24, 60, 0)
+
+            if form_results.empty?
+                # Cancel button pushed
+                @cancel = true
+                break
+            end
+
+            # Password input
+            label = "Password"
+            data = form_password.new
+            data.label = label
+            data.ly = 1
+            data.lx = 1
+            data.item = @conf["pass"]
+            data.iy = 1
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            passitems.push(data.to_a)
+
+            dialog.title = "WebUI Password configuration"
+            form_results_password = dialog.passwordform(textpassword, passitems, 24, 60, 0)
+
+            if form_results_password.empty?
+                # Cancel button pushed
+                @cancel = true
+                break
+            else
+                addr = form_results["Address"]
+                user = form_results["User"]
+                password = form_results_password["Password"]
+                node_name = form_results["Sensor Name"]
+
+                if Config_utils.check_manager_credentials(addr, user, password)
+                    @conf[:host] = addr
+                    @conf[:user] = user
+                    @conf[:pass] = password
+                    @conf[:node_name] = node_name
+                    break
+                end
+            end
+
+            # error, do another loop
+            dialog = MRDialog.new
+            dialog.clear = true
+            dialog.title = "ERROR when trying to login to the manager"
+            text = <<EOF
+
+We have detected an error while checking login credentials.
+
+Please, review host of the manager, username and password configuration.
+EOF
+            dialog.msgbox(text, 10, 41)
+        end
+    end
+end
+
 class DNSConf < WizConf
 
     attr_accessor :conf, :cancel
