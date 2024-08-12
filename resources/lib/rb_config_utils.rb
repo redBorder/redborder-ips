@@ -81,7 +81,7 @@ module Config_utils
       end
     end
     
-    # Create log file for registration without rb-registwer
+    # Create log file for registration without rb-register
     def self.ensure_log_file_exists
       log_directory = '/var/log/rb-register-common'
       log_file = "#{log_directory}/register.log"
