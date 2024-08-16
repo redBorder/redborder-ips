@@ -1,5 +1,3 @@
-#!/bin/bash
-
 #######################################################################
 # Copyright (c) 2014 ENEO Tecnología S.L.
 # This file is part of redBorder.
