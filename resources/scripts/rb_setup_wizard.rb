@@ -17,6 +17,7 @@ opt = Getopt::Std.getopts("f")
 
 # Load old configuration if any
 init_conf = YAML.load_file(CONFFILE) rescue nil
+init_conf_webui_address = init_conf['webui_host'] rescue nil
 init_conf_cloud_address = init_conf['cloud_address'] rescue nil
 init_conf_network = init_conf['network'] rescue nil
 init_conf_segments = init_conf['segments'] || [] rescue []
@@ -68,6 +69,11 @@ Config_utils.net_init_bypass
 puts "\033]0;redborder - setup wizard\007"
 
 general_conf = {
+    "webui_host" => "rblive.redborder.com",
+    "webui_user" => "admin",
+    "ips_node_name" => "ips-sensor",
+    "webui_pass" => "",
+    "registration_mode" => "proxy",
     "cloud_address" => "rblive.redborder.com",
     "network" => {
         "interfaces" => [],
@@ -100,6 +106,54 @@ yesno = dialog.yesno(text,0,0)
 
 unless yesno # yesno is "yes" -> true
     cancel_wizard
+end
+
+##############################
+# RENAME NETWORK INTERFACES  #
+##############################
+if Config_utils.need_to_rename_network_interfaces?
+  text = <<EOF
+
+  We have detected that your system has modern network interface names (e.g., enp0s3, wlp2s0) instead of the traditional names (e.g., eth0, eth1).
+
+  Renaming network interfaces can help maintain consistency and compatibility with certain applications and scripts that expect the older naming convention.
+
+  Would you like to rename your network interfaces to the traditional naming convention?
+
+  Note: This process will modify system configuration files and may require a system restart to apply the changes.
+
+EOF
+
+  dialog = MRDialog.new
+  dialog.clear = true
+  dialog.title = "Rename Network Interfaces"
+  dialog.cancel_label = "SKIP"
+  dialog.no_label = "SKIP"
+  yesno = dialog.yesno(text,0,0)
+  if yesno
+    text = <<EOF
+
+    You have chosen to rename your network interfaces. Please confirm your choice.
+
+EOF
+
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Confirm configuration"
+    yesno = dialog.yesno(text,0,0)
+
+    unless yesno # yesno is "yes" -> true
+        cancel_wizard
+    end
+    command = "#{ENV['RBBIN']}/rb_rename_network_interfaces.sh"
+
+    dialog = MRDialog.new
+    dialog.clear = false
+    dialog.title = "Applying configuration"
+    dialog.prgbox(command,20,100, "Executing rb_rename_network_interfaces")
+    system("reboot")
+  end
+
 end
 
 ##########################
@@ -266,8 +320,15 @@ end
 ################
 # Registration #
 ################
+
+registration_mode = ModeConf.new
+registration_mode.doit
+general_conf["registration_mode"] = registration_mode.conf.to_s
+registration_mode = general_conf["registration_mode"]
+cancel_wizard if registration_mode == ""
+
 make_registration = true
-unless init_conf_cloud_address.nil?
+unless init_conf_cloud_address.nil? || init_conf_webui_address.nil?
     dialog = MRDialog.new
     dialog.clear = true
     dialog.title = "Confirm configuration"
@@ -280,15 +341,30 @@ EOF
 end
 
 if make_registration 
-    ###############################
-    # CLOUD ADDRESS CONFIGURATION #
-    ###############################
+    if registration_mode == "proxy"
+        ###############################
+        # CLOUD ADDRESS CONFIGURATION #
+        ###############################
 
-    # Conf for hostname and domain
-    cloud_address_conf = CloudAddressConf.new
-    cloud_address_conf.doit # launch wizard
-    cancel_wizard if cloud_address_conf.cancel
-    general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+        # Conf for hostname and domain
+        cloud_address_conf = CloudAddressConf.new
+        cloud_address_conf.doit # launch wizard
+        cancel_wizard if cloud_address_conf.cancel
+        general_conf["cloud_address"] = cloud_address_conf.conf[:cloud_address]
+    else
+        ###############################
+        #      SSH CONFIGURATION      #
+        ###############################
+
+        # Conf for hostname and domain
+        init_conf_webui_address_conf = RegularRegistration.new
+        init_conf_webui_address_conf.doit # launch wizard
+        cancel_wizard if init_conf_webui_address_conf.cancel
+        general_conf["webui_host"] = init_conf_webui_address_conf.conf[:host]
+        general_conf["webui_user"] = init_conf_webui_address_conf.conf[:user]   
+        general_conf["webui_pass"] = init_conf_webui_address_conf.conf[:pass]
+        general_conf["ips_node_name"] = init_conf_webui_address_conf.conf[:node_name]      
+    end
 end
 
 ###############################
@@ -341,8 +417,22 @@ unless general_conf["segments"].nil? or general_conf["segments"].empty?
 end
 
 text += "\n- Make Registration: #{make_registration}\n"
+text += "    Mode: #{registration_mode}\n"
 
-text += "\n- Cloud address: #{general_conf["cloud_address"]}\n" if make_registration
+if registration_mode == "proxy" and make_registration
+    text += "\n- Cloud address: #{general_conf["cloud_address"]}\n"
+    general_conf.delete('webui_host')
+    general_conf.delete('webui_user')
+    general_conf.delete('webui_pass')
+    general_conf.delete('ips_node_name')
+    
+elsif make_registration
+    general_conf.delete('cloud_address')
+    text += "    Host : #{general_conf['webui_host']}\n"
+    text += "    User : #{general_conf['webui_user']}\n"
+    text += "    Pass : #{'*' * general_conf['webui_pass'].length}\n"
+    text += "    Sensor Name: #{general_conf['ips_node_name']}\n"
+end
 
 text += "\nPlease, is this configuration ok?\n \n"
 

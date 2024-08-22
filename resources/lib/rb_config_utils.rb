@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+require 'net/http'
+require 'openssl'
+require 'uri'
+require 'socket'
 require 'digest'
 require 'base64'
 require 'yaml'
@@ -7,6 +11,7 @@ require 'net/ip'
 require 'system/getifaddrs'
 require 'netaddr'
 require 'base64'
+require 'fileutils'
 
 module Config_utils
 
@@ -30,6 +35,147 @@ module Config_utils
             end
         end
         ret
+    end
+
+    # Resolve manager dns name to ip
+    def self.managerToIp(str)
+      ipv4_regex = /\A(\d{1,3}\.){3}\d{1,3}\z/
+      ipv6_regex = /\A(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\z/
+      dns_regex = /\A[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-.]+\z/
+      return str if str =~ ipv4_regex || str =~ ipv6_regex
+      if str =~ dns_regex
+        ip = `dig +short #{str}`.strip
+        return ip unless ip.empty?
+      end
+    end
+
+    # Generate hosts for ips to send data to the manager
+    def self.hook_hosts(domain)
+      domain = managerToIp(domain)
+      hosts_content = File.read('/etc/hosts')
+      hosts_content.gsub!(/^.*\bdata\.redborder\.cluster\b.*$/, '')
+      hosts_content.gsub!(/^.*\brbookshelf\.s3\.redborder\.cluster\b.*$/, '')
+      hosts_content << "#{domain} data.redborder.cluster kafka.service kafka.redborder.cluster erchef.redborder.cluster rbookshelf.s3.redborder.cluster redborder.cluster s3.service erchef.service http2k.service webui.service\n"
+      File.write('/etc/hosts', hosts_content)
+    end
+
+    # Replace chef server urls
+    def self.replace_chef_server_url
+      chef_paths = [
+        '/etc/chef/client.rb.default',
+        '/etc/chef/client.rb',
+        '/etc/chef/knife.rb.default',
+        '/etc/chef/knife.rb',
+        '/root/.chef/knife.rb'
+      ]
+    
+      chef_paths.each do |file_path|
+        if File.file?(file_path)
+          file_content = File.read(file_path)
+          
+          file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url          "https://erchef.service/organizations/redborder"')
+          file_content.gsub!(/^chef_server_url\s+'.*'/, "chef_server_url          'https://erchef.service/organizations/redborder'")
+
+          File.write(file_path, file_content)
+        end
+      end
+    end
+    
+    # Create log file for registration without rb-register
+    def self.ensure_log_file_exists
+      log_directory = '/var/log/rb-register-common'
+      log_file = "#{log_directory}/register.log"
+
+      unless Dir.exist?(log_directory)
+        system("mkdir -p #{log_directory}")
+      end
+
+      if File.exist?(log_file)
+        system("truncate -s 0 #{log_file}")
+      else
+        system("touch #{log_file}")
+      end
+    end
+    
+    # Set role for chef
+    def self.update_chef_roles(mode)
+      file_paths = [
+        '/etc/chef/role-once.json.default',
+        '/etc/chef/role.json.default'
+      ]
+
+      content = {
+        "run_list": [
+          "role[sensor]",
+          mode == "proxy" ? "role[ipscp-sensor]" : "role[ips-sensor]"
+        ],
+        "redBorder": {
+          "force-run-once": true
+        }
+      }
+
+      file_paths.each do |file_path|
+        FileUtils.mkdir_p(File.dirname(file_path))
+
+        File.open(file_path, 'w') do |file|
+          file.write(JSON.pretty_generate(content))
+        end
+      end
+    end
+
+    # Check credentials of the manager are correct
+    def self.check_manager_credentials(host, user, pass)
+      url = URI("https://#{host}/api/v1/users/login")
+      params = { 'user[username]' => user, 'user[password]' => pass }
+      headers = { 'Accept' => 'application/json' }
+    
+      begin
+        http = Net::HTTP.new(url.host, url.port)
+        http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE 
+    
+        response = http.post(url.path, URI.encode_www_form(params), headers)
+    
+        return response.code == '200'
+      rescue StandardError => e
+        puts "Error: #{e.message}"
+        return false
+      end
+    end
+
+    # Function to remove lines matching a pattern from specific files
+    def self.remove_ssl_verify_mode_lines
+      file_paths = [
+        '/etc/chef/client.rb.default',
+        '/etc/chef/client.rb'
+      ]
+
+      pattern = /^\s*ssl_verify_mode/
+
+      file_paths.each do |file_path|
+        if File.file?(file_path)
+          lines = File.readlines(file_path)
+          lines.reject! { |line| line.match?(pattern) }
+          File.open(file_path, 'w') do |file|
+            file.puts lines
+          end
+        end
+      end
+    end
+
+    # Function to generate a random nodename
+    # it will retrieve a random host for regular ips registration to the manager
+    def self.generate_random_hostname
+      characters = ('a'..'z').to_a + ('0'..'9').to_a
+      random_id = Array.new(8) { characters.sample }.join
+      hostname = "rbips-#{random_id}"
+      hostname
+    end
+
+    # Function to get my own ip address
+    def self.get_ip_address
+      ip = Socket.ip_address_list.detect(&:ipv4_private?).ip_address
+      ip
     end
 
     # Function to check a valid IPv4 IP address
@@ -419,6 +565,28 @@ module Config_utils
     net_ipmi_gateway = "" unless Config_utils.check_ipv4({:ip => net_ipmi_gateway})
     
     return { :ip => net_ipmi_ip, :netmask => net_ipmi_netmask, :gateway => net_ipmi_gateway}
+  end
+
+  def self.get_network_interfaces
+    interfaces = []
+    `ip link show`.each_line do |line|
+      if line =~ /^\d+: ([^:]+):/
+        interfaces << $1 if $1 != "lo"
+      end
+    end
+    interfaces
+  end
+
+  def self.modern_interface?(interface)
+    old_pattern = /^eth\d+/
+    !(interface =~ old_pattern)
+  end
+
+  def self.need_to_rename_network_interfaces?
+    interfaces = get_network_interfaces
+    modern_interfaces = interfaces.select { |interface| modern_interface?(interface) }
+
+    modern_interfaces.any?
   end
 
 end

@@ -14,7 +14,7 @@ Requires: bash dialog dmidecode rsync nc telnet redborder-common redborder-chef-
 Requires: chef-workstation
 Requires: network-scripts network-scripts-teamd
 Requires: redborder-cgroups
-Requires: daq = 2.0.4 daq-modules = 2.0.4
+Requires: daq = 2.0.7 daq-modules = 2.0.7
 
 %description
 %{summary}
@@ -41,6 +41,8 @@ cp resources/etc/rb_sysconf.conf.default %{buildroot}/etc/
 chmod 0755 %{buildroot}/usr/lib/redborder/bin/*
 chmod 0755 %{buildroot}/usr/lib/redborder/scripts/*
 install -D -m 0644 resources/lib/rb_wiz_lib.rb %{buildroot}/usr/lib/redborder/lib
+install -D -m 0644 resources/lib/wiz_conf.rb %{buildroot}/usr/lib/redborder/lib
+install -D -m 0644 resources/lib/wizard_helper.rb %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/lib/rb_config_utils.rb %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/lib/rb_functions.sh %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/systemd/rb-init-conf.service %{buildroot}/usr/lib/systemd/system/rb-init-conf.service
@@ -52,7 +54,9 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 [ -f /usr/lib/redborder/bin/rb_rubywrapper.sh ] && /usr/lib/redborder/bin/rb_rubywrapper.sh -c
 systemctl daemon-reload
 systemctl enable pf_ring && systemctl start pf_ring
-[ -f /etc/rb_sysconf.conf.default -a ! -f /etc/rb_sysconf.conf ] && cp /etc/rb_sysconf.conf.default /etc/rb_sysconf.conf
+# adjust kernel printk settings for the console
+echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
+/sbin/sysctl --system > /dev/null 2>&1
 
 %files
 %defattr(0755,root,root)
@@ -66,12 +70,17 @@ systemctl enable pf_ring && systemctl start pf_ring
 /etc/rb_sysconf.conf.default
 /etc/redborder
 /usr/lib/redborder/lib/rb_wiz_lib.rb
+/usr/lib/redborder/lib/wiz_conf.rb
+/usr/lib/redborder/lib/wizard_helper.rb
 /usr/lib/redborder/lib/rb_config_utils.rb
 /usr/lib/redborder/lib/rb_functions.sh
 /usr/lib/systemd/system/rb-init-conf.service
 %doc
 
 %changelog
+* Thu Dec 14 2023 Miguel Negrón <manegron@redborder.com> - 1.4.0-1
+- Set version for daq to 2.0.7
+
 * Thu Dec 14 2023 Miguel Álvarez <malvarez@redborder.com> - 1.3.5-1
 - Add cgroups
 

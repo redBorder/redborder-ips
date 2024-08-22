@@ -5,35 +5,12 @@ require 'net/ip'
 require 'system/getifaddrs'
 require 'netaddr'
 require 'uri'
+require_relative 'wizard_helper'
+require_relative 'wiz_conf'
 require File.join(ENV['RBDIR'].nil? ? '/usr/lib/redborder' : ENV['RBDIR'],'lib/rb_config_utils.rb')
 
 CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml"
 LOGFILE  = "/tmp/rb_setup_wizard.log"
-class WizConf
-
-    # Read propierties from sysfs for a network devices
-    def netdev_property(devname)
-        netdev = {}
-        IO.popen("udevadm info -q property -p /sys/class/net/#{devname} 2>/dev/null").each do |line|
-            unless line.match(/^(?<key>[^=]*)=(?<value>.*)$/).nil?
-                netdev[line.match(/^(?<key>[^=]*)=(?<value>.*)$/)[:key]] = line.match(/^(?<key>[^=]*)=(?<value>.*)$/)[:value]
-            end
-        end
-        if File.exist?"/sys/class/net/#{devname}/address"
-            f = File.new("/sys/class/net/#{devname}/address",'r')
-            netdev["MAC"] = f.gets.chomp
-            f.close
-        end
-        if File.exist?"/sys/class/net/#{devname}/operstate"
-            f = File.new("/sys/class/net/#{devname}/operstate",'r')
-            netdev["STATUS"] = f.gets.chomp
-            f.close
-        end
-
-        netdev
-    end
-
-end
 
 # Class to create a Network configuration box
 class NetConf < WizConf
@@ -691,18 +668,18 @@ EOF
                         ports.each{ |port| all_port_bypass = false unless Config_utils.net_get_device_bypass_support(port) }
 
                         if all_port_bypass
-                            bpbr_segments = segments.select{|s| s.name.start_with?"bp"} rescue []
+                            bpbr_segments = segments.select{|s| s['name'].start_with?"bp"} rescue []
                             segment["name"] = "bpbr" + (bpbr_segments.count > 0 ? bpbr_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = true
                         else
-                            br_segments = segments.select{|s| s.name.start_with?"br"} rescue []
+                            br_segments = segments.select{|s| s['name'].start_with?"br"} rescue []
                             segment["name"] = "br" + (br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = false
                         end                     
                                                   
                         @segments.push(segment)
+                        @segments = WizardHelper.refresh_segments @segments
                     end
-
                 end
 
             when "Delete segment"
@@ -732,6 +709,7 @@ EOF
                     checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
+                    checklist_selected_items = checklist_selected_items.first.split(' ') rescue []
                     checklist_selected_items.each do |segment|
                         # Store the segments to be deleted in @delete_segments
                         @segments.each{ |s|  @deleted_segments.push(s) if s["name"] == segment }
@@ -739,15 +717,7 @@ EOF
                         @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?                        
                     end
 
-                    # Reorganice segment names
-                    @segments.each_with_index do |segment, index|
-                        if segment["name"].start_with?"br" 
-                          segment["name"] = "br#{index}" 
-                        else 
-                          segment["name"] = "bpbr#{index}"
-                        end
-                        @segments[index] = segment
-                    end
+                    @segments = WizardHelper.refresh_segments @segments
                 end
             else
                 # Cancel pressed
@@ -838,6 +808,187 @@ EOF
 
     end
 
+end
+
+class ModeConf < WizConf
+
+    attr_accessor :conf, :cancel
+
+    def initialize()
+        @cancel = false
+        @conf = ""
+    end
+
+    def doit
+
+        modelist = [
+            {"name"=>"proxy", "description"=>"Register IPS sensor in proxy mode"},
+            {"name"=>"manager", "description"=>"Register IPS sensor to a manager"}
+            ]
+
+        dialog = MRDialog.new
+        dialog.clear = true
+        text = <<EOF
+
+Please, select mode of registration of the IPS
+EOF
+        items = []
+        radiolist_data = Struct.new(:tag, :item, :select)
+
+        modelist.each do |m|
+            data = radiolist_data.new
+            data.tag = m['name']
+            data.item = m['description']
+            data.select = m['name'] == 'manager' ? true : false
+            items.push(data.to_a)
+        end
+
+        dialog.title = "Set registration method"
+        selected_item = dialog.radiolist(text, items)
+
+        if dialog.exit_code == dialog.dialog_cancel
+            @cancel = true
+        elsif dialog.exit_code == dialog.dialog_ok
+            @conf = selected_item
+        end
+    end
+end
+
+class RegularRegistration < WizConf
+
+    attr_accessor :conf, :cancel
+
+    def initialize()
+        @cancel = false
+        @conf = {}
+    end
+
+    def doit
+        host = {}
+        @conf["host"] = "rblive.redborder.com"
+        @conf["user"] = "admin"
+        @conf["pass"] = ""
+        
+        loop do
+            dialog = MRDialog.new
+            dialog.clear = true
+            dialog.insecure = true
+            textpassword = <<EOF
+
+Please, set password of the manager (web) to connect to
+EOF
+            text = <<EOF
+
+Please, set user and password of the manager
+
+This will register the sensor to the manager using the webui, so make sure it is reachable.
+
+Do not use http:// or https:// in front, introduce the URL domain name of the manager.
+
+EOF
+            items = []
+            passitems = []
+            form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen, :attr)
+            form_password = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen)
+
+            label = "Address"
+            data = form_data.new
+            data.label = label
+            data.ly = 1
+            data.lx = 1
+            data.item = @conf["host"]
+            data.iy = 1
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
+            # User input
+            label = "User"
+            data = form_data.new
+            data.label = label
+            data.ly = 2
+            data.lx = 1
+            data.item = @conf["user"]
+            data.iy = 2
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
+            # Node name
+            label = "Sensor Name"
+            data = form_data.new
+            data.label = label
+            data.ly = 3
+            data.lx = 1
+            data.item = Config_utils.generate_random_hostname
+            data.iy = 3
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
+            dialog.title = "WebUI Sensor Registration Configuration"
+            form_results = dialog.mixedform(text, items, 24, 60, 0)
+
+            if form_results.empty?
+                # Cancel button pushed
+                @cancel = true
+                break
+            end
+
+            # Password input
+            label = "Password"
+            data = form_password.new
+            data.label = label
+            data.ly = 1
+            data.lx = 1
+            data.item = @conf["pass"]
+            data.iy = 1
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            passitems.push(data.to_a)
+
+            dialog.title = "WebUI Password configuration"
+            form_results_password = dialog.passwordform(textpassword, passitems, 24, 60, 0)
+
+            if form_results_password.empty?
+                # Cancel button pushed
+                @cancel = true
+                break
+            else
+                addr = form_results["Address"]
+                user = form_results["User"]
+                password = form_results_password["Password"]
+                node_name = form_results["Sensor Name"]
+
+                if Config_utils.check_manager_credentials(addr, user, password)
+                    @conf[:host] = addr
+                    @conf[:user] = user
+                    @conf[:pass] = password
+                    @conf[:node_name] = node_name
+                    break
+                end
+            end
+
+            # error, do another loop
+            dialog = MRDialog.new
+            dialog.clear = true
+            dialog.title = "ERROR when trying to login to the manager"
+            text = <<EOF
+
+We have detected an error while checking login credentials.
+
+Please, review host of the manager, username and password configuration.
+EOF
+            dialog.msgbox(text, 10, 41)
+        end
+    end
 end
 
 class DNSConf < WizConf
