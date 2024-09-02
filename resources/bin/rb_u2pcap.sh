@@ -150,11 +150,11 @@ else
     done 
   fi
     
-  if [ "x$pcapfile" != "x" ]; then
-    for n in $files; do      
-      [ $verbose -eq 1 ] && echo "    * $n"
-      nice -n 19 ionice -c2 -n7 cat $n >> $uni2
-    done
+  #if [ "x$pcapfile" != "x" ]; then
+    #for n in $files; do      
+    #  [ $verbose -eq 1 ] && echo "    * $n"
+      #nice -n 19 ionice -c2 -n7 cat $n >> $uni2
+    #done
 
    # if [ -f $uni2 ]; then
    #   echo "Generating pcap on $pcapfile"
@@ -162,7 +162,7 @@ else
    # else
    #   echo "ERROR: file $uni2 not found!"
    # fi
-  else
+  #else
     for n in $files; do      
       [ $verbose -eq 1 ] && echo "    * $n"
       nice -n 19 ionice -c2 -n7 /usr/bin/u2spewfoo $n | sed "s/^(IPv6 Event)$/$separator\n\n(IPv6 Event)/" | sed "s/^(Event)$/$separator\n\n(Event)/" | awk -v sig_id_param="$sid" -v gen_id_param="$gid" -v ip_source_param="$origin" -v ip_dest_param="$destination" -v start_param="$ltime" -v end_param="$utime" '
@@ -237,6 +237,6 @@ END {
     done
     echo "$separator"
     echo
-  fi
+ # fi
   rm -rf $tmpdir
 fi
