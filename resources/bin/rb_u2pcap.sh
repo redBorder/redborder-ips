@@ -156,12 +156,12 @@ else
       nice -n 19 ionice -c2 -n7 cat $n >> $uni2
     done
 
-    if [ -f $uni2 ]; then
-      echo "Generating pcap on $pcapfile"
-      nice -n 19 ionice -c2 -n7 /usr/bin/u2boat $u2boat_cmd -t pcap $uni2 $pcapfile
-    else
-      echo "ERROR: file $uni2 not found!"
-    fi
+   # if [ -f $uni2 ]; then
+   #   echo "Generating pcap on $pcapfile"
+      #nice -n 19 ionice -c2 -n7 /usr/bin/u2boat $u2boat_cmd -t pcap $uni2 $pcapfile #u2boat_cmd filter is not working anymore
+   # else
+   #   echo "ERROR: file $uni2 not found!"
+   # fi
   else
     for n in $files; do      
       [ $verbose -eq 1 ] && echo "    * $n"
