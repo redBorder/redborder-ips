@@ -209,7 +209,7 @@ def write_network_config_files(segment)
     system('service network restart &> /dev/null')
     sleep 10
     logger.info('Network restart completed.')
-  rescue StandardError => e
+  rescue => e
     logger.error("Error during segment configuration: #{e.message}")
   end
 end
