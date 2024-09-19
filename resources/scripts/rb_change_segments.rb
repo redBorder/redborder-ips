@@ -12,22 +12,24 @@ CONFFILE = "#{ENV['RBETC']}/rb_init_conf.yml" unless defined?(CONFFILE)
 DIALOGRC = "#{ENV['RBETC']}/dialogrc"
 ENV['DIALOGRC'] = DIALOGRC if File.exist?(DIALOGRC)
 
-opt = Getopt::Std.getopts('f')
+opt = Getopt::Std.getopts("f")
 
-def cancel_change_segments
-  dialog = MRDialog.new
-  dialog.clear = true
-  dialog.title = 'Segments change wizard cancelled'
+def cancel_change_segments()
 
-  text = <<~HEREDOC
+    dialog = MRDialog.new
+    dialog.clear = true
+    dialog.title = "Segments change wizard cancelled"
 
-    The segments change has been cancelled or stopped.
+    text = <<EOF
 
-    If you want to complete the change, please execute it again.
+The segments change has been cancelled or stopped.
 
-  HEREDOC
-  dialog.msgbox(text, 11, 41)
-  exit(1)
+If you want to complete the change, please execute it again.
+
+EOF
+    result = dialog.msgbox(text, 11, 41)
+    exit(1)
+
 end
 
 # Display a warning dialog to the user if not in a local tty.
@@ -38,16 +40,16 @@ end
 def local_tty_warning_wizard
   dialog = MRDialog.new
   dialog.clear = true
-  dialog.title = 'SETUP wizard cancelled'
+  dialog.title = "SETUP wizard cancelled"
 
-  text = <<~HEREDOC
+  text = <<EOF
 
-    This device must be configured under local tty.
+This device must be configured under local tty.
 
-    If you want to complete the setup wizard, please execute it again in a local tty.
+If you want to complete the setup wizard, please execute it again in a local tty.
 
-  HEREDOC
-  dialog.msgbox(text, 11, 41)
+EOF
+  result = dialog.msgbox(text, 11, 41)
   exit(1)
 end
 
@@ -76,17 +78,17 @@ end
 def warn_user_about_segment_deletion
   dialog = MRDialog.new
   dialog.clear = true
-  dialog.title = 'Warning: Delete All Segments'
+  dialog.title = "Warning: Delete All Segments"
   text = "All existing network segment configurations will be deleted.\nThis action cannot be undone.\nDo you want to continue?"
   choice = dialog.yesno(text, 10, 50)
-  exit(1) if choice == false
+  exit(1) if choice == false 
 end
 
 # Delete all existing bridge interfaces from the system.
 #
 # This function removes all network bridge interfaces that start with "br".
 def delete_existing_br_interfaces
-  br_interfaces = Dir.entries('/sys/class/net/').select { |f| f.start_with?('br') }
+  br_interfaces = Dir.entries("/sys/class/net/").select { |f| f.start_with?("br") }
   br_interfaces.each do |br_iface|
     system("ip link set #{br_iface} down")
     system("brctl delbr #{br_iface}")
@@ -100,8 +102,8 @@ init_conf = load_config(CONFFILE)
 
 segments_conf = SegmentsConf.new
 segments_conf.doit
-init_conf['segments'] = segments_conf.conf rescue nil
-init_conf['segments'] = nil if init_conf['segments'] && init_conf['segments'].empty?
+init_conf["segments"] = segments_conf.conf rescue nil
+init_conf["segments"] = nil if init_conf["segments"] && init_conf["segments"].empty?
 
 cancel_change_segments if segments_conf.cancel
 
@@ -114,7 +116,7 @@ def create_or_update_network_scripts(segment, init_conf)
   logger.info("Starting update for segment: #{segment['name']}")
   return logger.warn("No ports to configure for segment #{segment['name']}. Skipping configuration.") if segment["ports"].empty?
 
-  manage_network_interfaces(init_conf['segments'])
+  manage_network_interfaces(init_conf["segments"])
   write_network_config_files(segment)
 end
 
@@ -132,10 +134,10 @@ end
 # @return [Array<String>] an array of file paths to delete.
 def find_files_to_delete(segments)
   files_to_delete = []
-  list_net_conf = Dir.entries('/etc/sysconfig/network-scripts/').select { |f| f.start_with?('ifcfg-b') && !File.directory?(f) }
+  list_net_conf = Dir.entries("/etc/sysconfig/network-scripts/").select { |f| f.start_with?("ifcfg-b") && !File.directory?(f) }
 
   list_net_conf.each do |netconf|
-    bridge = netconf.gsub('ifcfg-', '')  # Extract bridge name from file name
+    bridge = netconf.gsub("ifcfg-", "")  # Extract bridge name from file name
 
     if segments.nil? || segments.none? { |s| s['name'] == bridge }
       files_to_delete.push("/etc/sysconfig/network-scripts/#{netconf}")
@@ -152,10 +154,10 @@ end
 # @param files_to_delete [Array<String>] an array of file paths to delete.
 def delete_network_interfaces(files_to_delete)
   files_to_delete.each do |iface_path_file|
-    iface = iface_path_file.split('/').last.gsub('ifcfg-', '') # Extract interface name from file name
+    iface = iface_path_file.split("/").last.gsub("ifcfg-", "")  # Extract interface name from file name
     puts "Stopping dev #{iface} .."
-    system("ip link set dev #{iface} down") # Deactivate the interface
-    if iface.start_with?('b')
+    system("ip link set dev #{iface} down")  # Deactivate the interface
+    if iface.start_with?("b")
       puts "Deleting dev bridge #{iface}"
       system("brctl delbr #{iface}")
     end
@@ -172,29 +174,29 @@ def write_network_config_files(segment)
     segment_file = "/etc/sysconfig/network-scripts/ifcfg-#{segment['name']}"
     File.open(segment_file, 'w') do |f|
       f.puts "DEVICE=#{segment['name']}"
-      f.puts 'TYPE=Bridge'
-      f.puts 'BOOTPROTO=none'
-      f.puts 'ONBOOT=yes'
-      f.puts 'IPV6_AUTOCONF=no'
-      f.puts 'IPV6INIT=no'
-      f.puts 'DELAY=0'
-      f.puts 'STP=off'
+      f.puts "TYPE=Bridge"
+      f.puts "BOOTPROTO=none"
+      f.puts "ONBOOT=yes"
+      f.puts "IPV6_AUTOCONF=no"
+      f.puts "IPV6INIT=no"
+      f.puts "DELAY=0"
+      f.puts "STP=off"
     end
     logger.info("Segment file created: #{segment_file}")
 
-    segment['ports'].each do |iface|
+    segment["ports"].each do |iface|
       iface_file = "/etc/sysconfig/network-scripts/ifcfg-#{iface}"
       File.open(iface_file, 'w') do |f|
         f.puts "DEVICE=\"#{iface}\""
         f.puts "BRIDGE=\"#{segment['name']}\""
-        f.puts 'TYPE=Ethernet'
-        f.puts 'BOOTPROTO=none'
-        f.puts 'NM_CONTROLLED=\"no\"'
-        f.puts 'ONBOOT=\"yes\"'
-        f.puts 'IPV6_AUTOCONF=no'
-        f.puts 'IPV6INIT=no'
-        f.puts 'DELAY=0'
-        f.puts 'STP=off'
+        f.puts "TYPE=Ethernet"
+        f.puts "BOOTPROTO=none"
+        f.puts "NM_CONTROLLED=\"no\""
+        f.puts "ONBOOT=\"yes\""
+        f.puts "IPV6_AUTOCONF=no"
+        f.puts "IPV6INIT=no"
+        f.puts "DELAY=0"
+        f.puts "STP=off"
       end
       logger.info("Interface file created: #{iface_file}")
     end
@@ -203,13 +205,13 @@ def write_network_config_files(segment)
     system('pkill dhclient &> /dev/null')
     system('service network restart &> /dev/null')
     sleep 10
-    logger.info('Network restart completed.')
+    logger.info("Network restart completed.")
   rescue => e
     logger.error("Error during segment configuration: #{e.message}")
   end
 end
 
-unless init_conf['segments'].nil?
+unless init_conf["segments"].nil?
   init_conf["segments"].each do |segment|
     create_or_update_network_scripts(segment, init_conf)
   end
@@ -223,5 +225,5 @@ sleep 10
 
 system('ohai -d /etc/chef/ohai/plugins/ redborder')
 
-puts 'Executing rb_wakeup_chef'
+puts "Executing rb_wakeup_chef"
 system('rb_wake_up.sh')
