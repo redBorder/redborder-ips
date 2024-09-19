@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-# frozen_string_literal: true
 
 require 'json'
 require 'mrdialog'
@@ -210,8 +209,10 @@ def write_network_config_files(segment)
   end
 end
 
-init_conf['segments']&.each do |segment|
-  create_or_update_network_scripts(segment, init_conf)
+unless init_conf['segments'].nil?
+  init_conf["segments"].each do |segment|
+    create_or_update_network_scripts(segment, init_conf)
+  end
 end
 
 save_config(CONFFILE, init_conf)
