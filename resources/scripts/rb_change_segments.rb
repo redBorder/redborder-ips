@@ -33,8 +33,7 @@ end
 
 # Display a warning dialog to the user if not in a local tty.
 #
-# This function uses `MRDialog` to create a dialog window. If the script is not being run in a local TTY, this message
-# is shown.
+# This function uses `MRDialog` to create a dialog window. If the script is not being run in a local TTY, this message is shown.
 # @example
 #   local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
 def local_tty_warning_wizard
@@ -137,7 +136,7 @@ def find_files_to_delete(segments)
   list_net_conf = Dir.entries('/etc/sysconfig/network-scripts/').select { |f| f.start_with?('ifcfg-b') && !File.directory?(f) }
 
   list_net_conf.each do |netconf|
-    bridge = netconf.gsub('ifcfg-', '') # Extract bridge name from file name
+    bridge = netconf.gsub('ifcfg-', '')  # Extract bridge name from file name
 
     if segments.nil? || segments.none? { |s| s['name'] == bridge }
       files_to_delete.push("/etc/sysconfig/network-scripts/#{netconf}")
