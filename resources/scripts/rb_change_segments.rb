@@ -116,9 +116,7 @@ cancel_change_segments if segments_conf.cancel
 def create_or_update_network_scripts(segment, init_conf)
   logger = Logger.new(STDOUT)
   logger.info("Starting update for segment: #{segment['name']}")
-  if segment["ports"].empty?
-    return logger.warn("No ports to configure for segment #{segment['name']}. Skipping configuration.")
-  end
+  return logger.warn("No ports to configure for segment #{segment['name']}. Skipping configuration.") if segment["ports"].empty?
 
   manage_network_interfaces(init_conf['segments'])
   write_network_config_files(segment)
