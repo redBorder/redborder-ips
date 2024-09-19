@@ -138,11 +138,12 @@ def find_files_to_delete(segments)
 
   list_net_conf.each do |netconf|
     bridge = netconf.gsub('ifcfg-', '') # Extract bridge name from file name
-    next unless segments.nil? || segments.none? { |s| s['name'] == bridge }
 
-    files_to_delete.push("/etc/sysconfig/network-scripts/#{netconf}")
-    bridge_interfaces = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE="#{bridge}"'`.split("\n")
-    files_to_delete += bridge_interfaces
+    if segments.nil? || segments.none? { |s| s['name'] == bridge }
+      files_to_delete.push("/etc/sysconfig/network-scripts/#{netconf}")
+      bridge_interfaces = `grep -rnwl '/etc/sysconfig/network-scripts' -e 'BRIDGE="#{bridge}"'`.split("\n")
+      files_to_delete += bridge_interfaces
+    end
   end
 
   files_to_delete.uniq
