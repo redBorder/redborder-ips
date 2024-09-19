@@ -79,7 +79,7 @@ def warn_user_about_segment_deletion
   dialog = MRDialog.new
   dialog.clear = true
   dialog.title = 'Warning: Delete All Segments'
-  text = '\nAll existing network segment configurations will be deleted.\nThis action cannot be undone.\nDo you want to continue?'
+  text = "All existing network segment configurations will be deleted.\nThis action cannot be undone.\nDo you want to continue?"
   choice = dialog.yesno(text, 10, 50)
   exit(1) if choice == false
 end
