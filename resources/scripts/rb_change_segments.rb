@@ -54,7 +54,7 @@ def local_tty_warning_wizard
 end
 
 # Run the wizard only in local tty
-local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
+local_tty_warning_wizard unless Config_utils.is_local_tty || opt['f']
 
 # Load configuration from a YAML file.
 #
