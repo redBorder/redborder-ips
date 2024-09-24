@@ -72,6 +72,35 @@ def save_config(file, config)
   File.open(file, 'w') { |f| f.write(config.to_yaml) }
 end
 
+# Display the current segment configuration before deletion using a dialog.
+#
+# This function uses `MRDialog` to show the segment configuration to the user.
+def show_current_segments_config_dialog(config)
+  dialog = MRDialog.new
+  dialog.clear = true
+  dialog.title = "Current Segment Configuration"
+
+  if config["segments"].nil? || config["segments"].empty?
+    text = "No segments are currently configured."
+  else
+    text = "Current Segment Configuration:\n\n"
+    config["segments"].each do |segment|
+      text += "Segment: #{segment['name']}\n"
+      text += "Ports: #{segment['ports'].join(', ')}\n"
+      text += "-----------------------\n"
+    end
+  end
+
+  # Display the dialog with the configuration
+  dialog.msgbox(text, 15, 50)
+end
+
+# Load the current configuration from the config file
+init_conf = load_config(CONFFILE)
+
+# Display segment configuration before any action
+show_current_segments_config_dialog(init_conf)
+
 # Display a warning dialog to the user about deleting all network segment configurations.
 #
 # This function uses `MRDialog` to create a dialog window. If the user selects 'No', the program exits.
@@ -137,7 +166,7 @@ def find_files_to_delete(segments)
   list_net_conf = Dir.entries("/etc/sysconfig/network-scripts/").select { |f| f.start_with?("ifcfg-b") && !File.directory?(f) }
 
   list_net_conf.each do |netconf|
-    bridge = netconf.gsub("ifcfg-", "")  # Extract bridge name from file name
+    bridge = netconf.gsub("ifcfg-", "")
 
     if segments.nil? || segments.none? { |s| s['name'] == bridge }
       files_to_delete.push("/etc/sysconfig/network-scripts/#{netconf}")
@@ -210,6 +239,8 @@ def write_network_config_files(segment)
     logger.error("Error during segment configuration: #{e.message}")
   end
 end
+
+manage_network_interfaces(init_conf["segments"])
 
 unless init_conf["segments"].nil?
   init_conf["segments"].each do |segment|
