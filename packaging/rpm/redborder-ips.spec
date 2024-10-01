@@ -7,6 +7,7 @@ BuildArch: noarch
 Summary: Main package for redborder ips
 
 License: AGPL 3.0
+Obsoletes: rsyslog-logrotate
 URL: https://github.com/redBorder/redborder-ips
 Source0: %{name}-%{version}.tar.gz
 
