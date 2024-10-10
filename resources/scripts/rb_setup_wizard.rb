@@ -236,7 +236,7 @@ EOF
         dialog.title = "Select Management Interface"
         management_iface = dialog.menu(text, interface_options, 10, 50)
 
-        if management_iface.nil? || management_iface.empty?
+        if !management_iface
             cancel_wizard
         else
             general_conf["network"]["management_interface"] = management_iface
@@ -288,7 +288,9 @@ segments_conf = SegmentsConf.new
 # Get segments and management interface from the old configuration
 # If there is only one interfaces this is for sure the management
 if general_conf["network"]["interfaces"].count  == 1
-  segments_conf.management_interface = general_conf["network"]["interfaces"].first
+    segments_conf.management_interface = general_conf["network"]["interfaces"].first
+else
+    segments_conf.management_interface = general_conf["network"]["management_interface"]
 end
 segments_conf.segments = Config_utils.net_segment_autoassign_bypass(init_conf_segments, segments_conf.management_interface) rescue []
 
