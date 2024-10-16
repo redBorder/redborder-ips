@@ -319,18 +319,6 @@ system("timedatectl set-timezone UTC")
 # TODO
 #system("ntpdate pool.ntp.org")
 
-
-#Firewall rules
-if !network.nil? #Firewall rules are not needed in cloud environments
-  #snmp
-  system('firewall-cmd --permanent --zone=public --add-port=161/udp &>/dev/null')
-  system('firewall-cmd --permanent --zone=public --add-port=162/udp &>/dev/null')
-
-  # Reload firewalld configuration
-  system('firewall-cmd --reload &>/dev/null')
-
-end
-
 # Upgrade system
 system('yum install systemd -y')
 
