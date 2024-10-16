@@ -25,7 +25,7 @@ def local_tty_warning_wizard
 end
 
 opt = Getopt::Std.getopts("hrf")
-if opt["h"] 
+if opt["h"]
   printf "rb_init_conf [-r] \n"
   printf "    -r                -> register sensor with manager\n"
   printf "    -f                -> force configure in non local tty\n"
@@ -167,7 +167,7 @@ unless network.nil? # network will not be defined in cloud deployments
   #
   list_net_conf = Dir.entries("/etc/sysconfig/network-scripts/").select {|f| !File.directory? f}
   list_net_conf.each do |netconf|
-    next unless netconf.start_with?"ifcfg-b" # We only need the bridges        
+    next unless netconf.start_with?"ifcfg-b" # We only need the bridges
     bridge = netconf.gsub("ifcfg-","")
 
     # If the bridge is not in the yaml file of the init_conf
@@ -189,7 +189,7 @@ unless network.nil? # network will not be defined in cloud deployments
       end
     end
   end
-  
+
   #
   # Remove bridges and delete related files
   #
@@ -204,9 +204,9 @@ unless network.nil? # network will not be defined in cloud deployments
     # TODO: Check if with checking that start with b is enough to know if is a bridge
     if iface.start_with?"b"
       puts "Deleting dev bridge #{iface}"
-      system("ip link del #{iface}") 
+      system("ip link del #{iface}")
     end
-    
+
     # Remove the files from /etc/sysconfig/network-scripts directory
     File.delete(iface_path_file) if File.exist?(iface_path_file)
   end
@@ -251,7 +251,7 @@ unless network.nil? # network will not be defined in cloud deployments
     end
   end
 
-  # Configure NETWORK 
+  # Configure NETWORK
   network['interfaces'].each do |iface|
     dev = iface['device']
     iface_mode = iface['mode']
@@ -322,11 +322,12 @@ system("timedatectl set-timezone UTC")
 
 #Firewall rules
 if !network.nil? #Firewall rules are not needed in cloud environments
+  #snmp
+  system('firewall-cmd --permanent --zone=public --add-port=161/udp &>/dev/null')
+  system('firewall-cmd --permanent --zone=public --add-port=162/udp &>/dev/null')
 
-  # Add rules here
-  
   # Reload firewalld configuration
-  #system("firewall-cmd --reload &>/dev/null")
+  system('firewall-cmd --reload &>/dev/null')
 
 end
 
@@ -361,7 +362,7 @@ if opt["r"]
       puts "Sensor registered to the manager, please wait..."
       puts "You can see logs in /var/log/rb-register-common/register.log"
       system('/usr/lib/redborder/bin/rb_register_finish.sh > /var/log/rb-register-common/register.log 2>&1')
-      puts "Registration and configuration finished!" 
+      puts "Registration and configuration finished!"
     else
       puts "Error: rb_associate_sensor.rb failed with exit status #{$?.exitstatus}. Please review #{INITCONF} file or network configuration..."
     end
