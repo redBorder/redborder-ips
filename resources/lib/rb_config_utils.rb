@@ -577,16 +577,13 @@ module Config_utils
     interfaces
   end
 
-  def self.modern_interface?(interface)
-    old_pattern = /^eth\d+/
-    !(interface =~ old_pattern)
-  end
-
   def self.need_to_rename_network_interfaces?
     interfaces = get_network_interfaces
-    modern_interfaces = interfaces.select { |interface| modern_interface?(interface) }
-
-    modern_interfaces.any?
+    interfaces_to_rename = []
+    interfaces.each do |interface|
+      interfaces_to_rename << interface if interface.length > 15
+    end
+    interfaces_to_rename.any?
   end
 
 end
