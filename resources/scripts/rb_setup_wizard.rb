@@ -114,11 +114,11 @@ end
 if Config_utils.need_to_rename_network_interfaces?
   text = <<EOF
 
-  We have detected that your system has modern network interface names (e.g., enp0s3, wlp2s0) instead of the traditional names (e.g., eth0, eth1).
+  Your system contains interface names exceeding 15 characters, which prevents the wizard from proceeding.
 
-  Renaming network interfaces can help maintain consistency and compatibility with certain applications and scripts that expect the older naming convention.
+  To continue, interface names must be 15 characters or fewer.
 
-  Would you like to rename your network interfaces to the traditional naming convention?
+  Would you like to rename your network interfaces?
 
   Note: This process will modify system configuration files and may require a system restart to apply the changes.
 
@@ -152,6 +152,8 @@ EOF
     dialog.title = "Applying configuration"
     dialog.prgbox(command,20,100, "Executing rb_rename_network_interfaces")
     system("reboot")
+  else
+    cancel_wizard
   end
 
 end
