@@ -456,7 +456,7 @@ EOF
                 text += " | Status: #{Config_utils.get_pether_status(netdev)} \n"
 
                 data.tag = netdev
-                data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                data.item = "MAC: #{netdevprop["MAC"]}, Vendor: #{netdevprop["ID_MODEL_FROM_DATABASE"]}"
                 items.push(data.to_a)
             end
             text += "\n"
@@ -626,7 +626,7 @@ EOF
                     next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
                     data = checklist_data.new
                     data.tag = netdev
-                    data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                    data.item = "MAC: #{netdevprop["MAC"]}, Vendor: #{netdevprop["ID_MODEL_FROM_DATABASE"]}"
                     checklist_items.push(data.to_a)
                 end
 
