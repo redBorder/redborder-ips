@@ -58,7 +58,7 @@ EOF
                 data.tag = netdev
                 # set default value
                 @confdev[netdev] = {"mode" => "dhcp"} if @confdev[netdev].nil?
-                data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                data.item = "MAC: #{netdevprop["MAC"]}, Vendor: #{netdevprop["ID_MODEL_FROM_DATABASE"]}"
                 items.push(data.to_a)
             end
             data.tag = "Finalize"
@@ -403,7 +403,7 @@ EOF
                 break
             end
         end
-        
+
     end #doit
 
 end
@@ -435,7 +435,7 @@ EOF
                 text += "- #{segment["name"]} | Ports: #{segment["ports"]} | Bypass Support: #{segment["bypass_support"]} \n"
             end
             text += "\n"
-       
+
             text += "Ethernet: \n"
             items = []
             menu_data = Struct.new(:tag, :item)
@@ -456,7 +456,7 @@ EOF
                 text += " | Status: #{Config_utils.get_pether_status(netdev)} \n"
 
                 data.tag = netdev
-                data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
+                data.item = "MAC: #{netdevprop["MAC"]}, Vendor: #{netdevprop["ID_MODEL_FROM_DATABASE"]}"
                 items.push(data.to_a)
             end
             text += "\n"
@@ -484,7 +484,7 @@ EOF
 Port Blinking for identification (#{netdev}).  \n
 Please set the time for blinking.
 EOF
-                    
+
                     items = []
                     form_data = Struct.new(:label, :ly, :lx, :item, :iy, :ix, :flen, :ilen, :attr)
 
@@ -505,7 +505,7 @@ EOF
                     dialog.title = "Blinking in seconds"
                     seconds = dialog.mixedform(text, items, 24, 60, 0)
                     seconds = seconds["Seconds:"].to_i rescue 30
-                    
+
                     dialog = MRDialog.new
                     dialog.clear = true
                     dialog.title = "Port blinking"
@@ -513,14 +513,14 @@ EOF
                     height = 20
                     width = 70
                     percent = 0
-                    dialog.progressbox(description,height, width) do |f| 
+                    dialog.progressbox(description,height, width) do |f|
                         system("ethtool -p #{netdev} #{seconds} &")
-                        for second in 1..seconds 
+                        for second in 1..seconds
                             f.puts "Blinking port #{netdev} for #{second} seconds.."
                             sleep 1
                         end
                     end
-                    
+
                     break
                 end
             else
@@ -573,7 +573,7 @@ EOF
             data.tag = "Info"
             data.item = "Display ports configuration"
             items.push(data.to_a)
-            
+
             data.tag = "Force bypass"
             data.item = "Force bypass auto assign"
             items.push(data.to_a)
@@ -611,13 +611,13 @@ EOF
                 @segments = Config_utils.net_segment_autoassign_bypass(segments, management_interface)
             when "New segment"
                 checklist_data = Struct.new(:tag, :item, :select)
-                
+
                 checklist_items = []
                 # loop over list of net devices
                 listnetdev = Dir.entries("/sys/class/net/").select {|f| !File.directory? f}
                 listnetdev.each do |netdev|
                     # we skip netdev that is taken by the management interface
-                    next if @management_interface and netdev == @management_interface 
+                    next if @management_interface and netdev == @management_interface
                     # we skip the netdev that is already in a segment
                     next unless @segments.select{|segment| segment["ports"].include? netdev }.empty?
                     # loopback and devices with no pci nor mac are not welcome!
@@ -626,8 +626,8 @@ EOF
                     next unless ((netdevprop["ID_BUS"] == "pci" or netdevprop["ID_BUS"] == "usb") and !netdevprop["MAC"].nil?)
                     data = checklist_data.new
                     data.tag = netdev
-                    data.item = "MAC: "+netdevprop["MAC"]+", Vendor: "+netdevprop["ID_MODEL_FROM_DATABASE"]
-                    checklist_items.push(data.to_a)          
+                    data.item = "MAC: #{netdevprop["MAC"]}, Vendor: #{netdevprop["ID_MODEL_FROM_DATABASE"]}"
+                    checklist_items.push(data.to_a)
                 end
 
                 if checklist_items.empty?
@@ -635,9 +635,9 @@ EOF
                     dialog_error.clear = true
                     dialog_error.title = "ERROR in segment configuration"
                     text = <<EOF
-    
+
 No interfaces available.
-    
+
 Please, delete an actual segment or add more interface to the machine.
 EOF
                     dialog_error.msgbox(text, 10, 41)
@@ -664,7 +664,7 @@ EOF
                         segment["ports"] = ports
 
                         next if ports.count > 2
-                        all_port_bypass = ports.count == 1 ? false : true 
+                        all_port_bypass = ports.count == 1 ? false : true
                         ports.each{ |port| all_port_bypass = false unless Config_utils.net_get_device_bypass_support(port) }
 
                         if all_port_bypass
@@ -675,8 +675,8 @@ EOF
                             br_segments = segments.select{|s| s['name'].start_with?"br"} rescue []
                             segment["name"] = "br" + (br_segments.count > 0 ? br_segments.count.to_s : 0.to_s)
                             segment['bypass_support'] = false
-                        end                     
-                                                  
+                        end
+
                         @segments.push(segment)
                         @segments = WizardHelper.refresh_segments @segments
                     end
@@ -705,7 +705,7 @@ This is the delete segment box.
 Please, choose the segments that you want to be deleted.
 
 EOF
-                                            
+
                     checklist_selected_items = checklist_dialog.checklist(checklist_text, checklist_items) rescue []
                     checklist_dialog_exit_code = checklist_dialog.exit_code
 
@@ -714,7 +714,7 @@ EOF
                         # Store the segments to be deleted in @delete_segments
                         @segments.each{ |s|  @deleted_segments.push(s) if s["name"] == segment }
                         # Delete the segment from @segments
-                        @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?                        
+                        @segments.delete_if{|s| s["name"] == segment} unless @segments.empty?
                     end
 
                     @segments = WizardHelper.refresh_segments @segments
@@ -727,7 +727,7 @@ EOF
         end
         # Delete segment from @deleted_segment if the use created it
         @segments.each{|segment| @deleted_segments.delete_if{|s| s["name"] == segment["name"] } }
-            
+
         @conf = @segments
     end
 end
@@ -745,7 +745,7 @@ class CloudAddressConf < WizConf
 
         host = {}
         @conf["Cloud address:"] = "rblive.redborder.com"
-        
+
         loop do
             dialog = MRDialog.new
             dialog.clear = true
@@ -868,7 +868,7 @@ class RegularRegistration < WizConf
         @conf["host"] = "rblive.redborder.com"
         @conf["user"] = "admin"
         @conf["pass"] = ""
-        
+
         loop do
             dialog = MRDialog.new
             dialog.clear = true
