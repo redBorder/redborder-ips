@@ -511,7 +511,7 @@ module Config_utils
     require "resolv"
     dns_resolver = Resolv::DNS.new()
     begin
-      dns_resolver.getaddress("repo.redborder.com")
+      dns_resolver.getaddress('packages.redborder.com')
       return true
     rescue Resolv::ResolvError => e
       return false
