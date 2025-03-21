@@ -47,6 +47,8 @@ install -D -m 0644 resources/lib/rb_config_utils.rb %{buildroot}/usr/lib/redbord
 install -D -m 0644 resources/lib/rb_functions.sh %{buildroot}/usr/lib/redborder/lib
 install -D -m 0644 resources/systemd/rb-init-conf.service %{buildroot}/usr/lib/systemd/system/rb-init-conf.service
 install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redborder/lib/dhclient-enter-hooks
+mkdir -p %{buildroot}/tmp/patches
+cp resources/patches/chef_upgrade.patch %{buildroot}/tmp/patches/
 
 %pre
 
@@ -57,8 +59,12 @@ systemctl enable pf_ring && systemctl start pf_ring
 # adjust kernel printk settings for the console
 echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 /sbin/sysctl --system > /dev/null 2>&1
+patch -p1 < /tmp/patches/chef_upgrade.patch
+
+rm -f /tmp/patches/chef_upgrade.patch
 
 %files
+/tmp/patches/chef_upgrade.patch
 %defattr(0755,root,root)
 /usr/lib/redborder/bin
 /usr/lib/redborder/scripts
@@ -78,6 +84,9 @@ echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 %doc
 
 %changelog
+* Thu Feb 20 2025 Vicente Mesa <vimesa@redborder.com> - 
+- Update chef-workstation
+
 * Thu Dec 14 2023 Miguel Negrón <manegron@redborder.com> - 1.4.0-1
 - Set version for daq to 2.0.7
 
