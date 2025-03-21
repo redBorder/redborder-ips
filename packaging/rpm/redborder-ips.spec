@@ -64,6 +64,7 @@ patch -p1 < /tmp/patches/chef_upgrade.patch
 rm -f /tmp/patches/chef_upgrade.patch
 
 %files
+/tmp/patches/chef_upgrade.patch
 %defattr(0755,root,root)
 /usr/lib/redborder/bin
 /usr/lib/redborder/scripts
