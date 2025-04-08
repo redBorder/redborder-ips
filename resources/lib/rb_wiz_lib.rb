@@ -745,6 +745,7 @@ class CloudAddressConf < WizConf
 
         host = {}
         @conf["Cloud address:"] = "rblive.redborder.com"
+        @conf["Domain name:"] = "redborder.cluster"
 
         loop do
             dialog = MRDialog.new
@@ -774,6 +775,19 @@ EOF
             data.attr = 0
             items.push(data.to_a)
 
+            label = "Domain name:"
+            data = form_data.new
+            data.label = label
+            data.ly = 2
+            data.lx = 1
+            data.item = @conf[label]
+            data.iy = 2
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
             dialog.title = "Cloud address configuration"
             host = dialog.mixedform(text, items, 24, 60, 0)
 
@@ -782,9 +796,9 @@ EOF
                 @cancel = true
                 break
             else
-                if Config_utils.check_cloud_address(host["Cloud address:"])
+                if Config_utils.check_cloud_address(host["Cloud address:"]) and Config_utils.check_domain(host["Domain name:"])
                     # need to confirm lenght
-                    if (host["Cloud address:"].length < 254)
+                    if (host["Cloud address:"].length < 254 and host["Domain name:"].length < 254)
                         break
                     end
                 end
@@ -805,7 +819,7 @@ EOF
         end
 
         @conf[:cloud_address] = host["Cloud address:"]
-
+        @conf[:cdomain] = host["Domain name:"]
     end
 
 end
@@ -866,6 +880,7 @@ class RegularRegistration < WizConf
     def doit
         host = {}
         @conf["host"] = "rblive.redborder.com"
+        @conf["Domain name"] = "redborder.cluster"
         @conf["user"] = "admin"
         @conf["pass"] = ""
 
@@ -904,14 +919,28 @@ EOF
             data.attr = 0
             items.push(data.to_a)
 
-            # User input
-            label = "User"
+            # Node name
+            label = "Domain name"
             data = form_data.new
             data.label = label
             data.ly = 2
             data.lx = 1
-            data.item = @conf["user"]
+            data.item = @conf[label]
             data.iy = 2
+            data.ix = 16
+            data.flen = 253
+            data.ilen = 0
+            data.attr = 0
+            items.push(data.to_a)
+
+            # User input
+            label = "User"
+            data = form_data.new
+            data.label = label
+            data.ly = 3
+            data.lx = 1
+            data.item = @conf["user"]
+            data.iy = 3
             data.ix = 16
             data.flen = 253
             data.ilen = 0
@@ -922,10 +951,10 @@ EOF
             label = "Sensor Name"
             data = form_data.new
             data.label = label
-            data.ly = 3
+            data.ly = 4
             data.lx = 1
             data.item = Config_utils.generate_random_hostname
-            data.iy = 3
+            data.iy = 4
             data.ix = 16
             data.flen = 253
             data.ilen = 0
@@ -966,12 +995,14 @@ EOF
                 user = form_results["User"]
                 password = form_results_password["Password"]
                 node_name = form_results["Sensor Name"]
+                cdomain = form_results["Domain name"]
 
                 if Config_utils.check_manager_credentials(addr, user, password)
                     @conf[:host] = addr
                     @conf[:user] = user
                     @conf[:pass] = password
                     @conf[:node_name] = node_name
+                    @conf[:cdomain] = cdomain
                     break
                 end
             end

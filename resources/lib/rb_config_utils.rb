@@ -50,12 +50,12 @@ module Config_utils
     end
 
     # Generate hosts for ips to send data to the manager
-    def self.hook_hosts(domain)
+    def self.hook_hosts(domain, cdomain)
       domain = managerToIp(domain)
       hosts_content = File.read('/etc/hosts')
       hosts_content.gsub!(/^.*\bdata\.redborder\.cluster\b.*$/, '')
       hosts_content.gsub!(/^.*\brbookshelf\.s3\.redborder\.cluster\b.*$/, '')
-      hosts_content << "#{domain} data.redborder.cluster kafka.service kafka.redborder.cluster erchef.redborder.cluster rbookshelf.s3.redborder.cluster redborder.cluster s3.service erchef.service http2k.service webui.service\n"
+      hosts_content << "#{domain} data.#{cdomain} kafka.service kafka.#{cdomain} erchef.#{cdomain} rbookshelf.s3.#{cdomain} #{cdomain} s3.service erchef.service http2k.service webui.service\n"
       File.write('/etc/hosts', hosts_content)
     end
 
@@ -68,11 +68,11 @@ module Config_utils
         '/etc/chef/knife.rb',
         '/root/.chef/knife.rb'
       ]
-    
+
       chef_paths.each do |file_path|
         if File.file?(file_path)
           file_content = File.read(file_path)
-          
+
           file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url          "https://erchef.service/organizations/redborder"')
           file_content.gsub!(/^chef_server_url\s+'.*'/, "chef_server_url          'https://erchef.service/organizations/redborder'")
 
@@ -80,7 +80,7 @@ module Config_utils
         end
       end
     end
-    
+
     # Create log file for registration without rb-register
     def self.ensure_log_file_exists
       log_directory = '/var/log/rb-register-common'
@@ -96,7 +96,7 @@ module Config_utils
         system("touch #{log_file}")
       end
     end
-    
+
     # Set role for chef
     def self.update_chef_roles(mode)
       file_paths = [
@@ -128,14 +128,14 @@ module Config_utils
       url = URI("https://#{host}/api/v1/users/login")
       params = { 'user[username]' => user, 'user[password]' => pass }
       headers = { 'Accept' => 'application/json' }
-    
+
       begin
         http = Net::HTTP.new(url.host, url.port)
         http.use_ssl = true
-        http.verify_mode = OpenSSL::SSL::VERIFY_NONE 
-    
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
         response = http.post(url.path, URI.encode_www_form(params), headers)
-    
+
         return response.code == '200'
       rescue StandardError => e
         puts "Error: #{e.message}"
@@ -400,10 +400,10 @@ module Config_utils
   end
 
   # Get real mac of interface
-  def self.net_get_real_mac(interface) 
+  def self.net_get_real_mac(interface)
     system("ip a s #{interface} | egrep -q \"bond\"")
     return system("cat /sys/class/net/#{interface}/address") unless $?.success?
-    
+
     #this iface belongs to a bonding
     interface_bond=system("ip a s dev #{interface}|grep bond|tr ' ' '\n'|grep bond|head -n 1")
     return system("grep -A 10 \"Slave Interface: #{interface}\" /proc/net/bonding/#{interface_bond} | grep \"Permanent HW addr:\" | head -n 1 | awk '{print $4}'")
@@ -458,7 +458,7 @@ module Config_utils
     num_slots = 16384*1 # 16k Default value
     if mem_total > 32000000
       num_slots = 16384*1 # 16k
-    elsif mem_total > 64000000 
+    elsif mem_total > 64000000
       if num_segments == 1
         num_slots = 16384*4 # 64k
       elsif num_segments == 2
@@ -469,7 +469,7 @@ module Config_utils
         num_slots = 16384*1 # 16k
       end
     else # >= 64Gbytes
-      if num_segments == 1 
+      if num_segments == 1
         num_slots = 16384*8 #128k
       elsif num_segments < 4
         num_slots = 16384*4 #64k
@@ -495,7 +495,7 @@ module Config_utils
           # order matters need to have the slave first
           if netdev_slave and listnetdev.include?netdev_slave
             pf_ring_bypass_interfaces.push(netdev_slave)
-            pf_ring_bypass_interfaces.push(netdev) 
+            pf_ring_bypass_interfaces.push(netdev)
           end
         end
     end
@@ -504,7 +504,7 @@ module Config_utils
 
   def self.is_local_tty
     system('tty | egrep -q "/dev/tty[S0-9][0-9]*"')
-    return $?.success?      
+    return $?.success?
   end
 
   def self.has_internet?
@@ -527,21 +527,21 @@ module Config_utils
 
     return pether_status
   end
-  
+
   def self.get_pether_speed(pether)
     pether_speed="unkn"
-    
+
     if File.exists?"/sys/class/net/#{pether}/speed"
       pether_speed=`cat /sys/class/net/#{pether}/speed 2>/dev/null`.strip
     end
-    
+
     pether_speed="unkn" if pether_speed.nil? or pether_speed.empty? or pether_speed.to_s == "-1"
     return pether_speed
   end
 
   def self.get_pether_duplex(pether)
     pether_duplex="unkn"
-    
+
     if File.exists?"/sys/class/net/#{pether}/duplex"
       pether_duplex=`cat /sys/class/net/#{pether}/duplex 2>/dev/null`.strip
     end
@@ -557,13 +557,13 @@ module Config_utils
     net_ipmi_ip=`ipmitool lan print 1| egrep "^IP Address[ ]*:" | awk -F : '{print $2}' | sed 's/ //g'`.strip
     net_ipmi_netmask=`ipmitool lan print 1| egrep "^Subnet Mask[ ]*:" | awk -F : '{print $2}' | sed 's/ //g'`.strip
     if !Config_utils.check_ipv4({:ip => net_ipmi_ip}) and !Config_utils.check_ipv4({:netmask => net_ipmi_netmask})
-      net_ipmi_ip = "" 
+      net_ipmi_ip = ""
       net_ipmi_netmask = ""
     end
-    
+
     net_ipmi_gateway=`ipmitool lan print 1| egrep "^Default Gateway IP[ ]*:" | awk -F : '{print $2}' | sed 's/ //g'`.strip
     net_ipmi_gateway = "" unless Config_utils.check_ipv4({:ip => net_ipmi_gateway})
-    
+
     return { :ip => net_ipmi_ip, :netmask => net_ipmi_netmask, :gateway => net_ipmi_gateway}
   end
 

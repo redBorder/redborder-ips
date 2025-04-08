@@ -50,6 +50,7 @@ else
 
   ips_node_name = init_conf['ips_node_name']
 end
+cdomain = init_conf['cdomain']
 
 network = init_conf['network']
 
@@ -64,6 +65,8 @@ open("/etc/redborder/rb_init_conf.conf", "w") { |f|
   f.puts "#REBORDER ENV VARIABLES"
 }
 
+# Set cdomain file
+File.open("/etc/redborder/cdomain", "w") { |f| f.puts "#{cdomain}" }
 # Apply config preparation
 #system('systemctl stop chef-client &>/dev/null')
 system('service snortd stop &>/dev/null') if File.exists?("/etc/rc.d/init.d/snortd")
@@ -334,7 +337,7 @@ if opt["r"]
   if registration_mode == "proxy"
     if Config_utils.check_cloud_address(cloud_address)
       IPSOPTS="-t ips -i -d -f"
-      system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} #{IPSOPTS}")
+      system("/usr/lib/redborder/bin/rb_register_url.sh -u #{cloud_address} -c #{cdomain} #{IPSOPTS}")
     else
       p err_msg = "Invalid cloud address. Please review #{INITCONF} file"
       exit 1
@@ -343,7 +346,7 @@ if opt["r"]
     system("sudo hostnamectl set-hostname #{ips_node_name}")
     system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host}")
     if $?.exitstatus == 0
-      Config_utils.hook_hosts webui_host
+      Config_utils.hook_hosts(webui_host, cdomain)
       Config_utils.replace_chef_server_url
       Config_utils.ensure_log_file_exists
       system("sed -i '/webui_pass/d' #{INITCONF}")
