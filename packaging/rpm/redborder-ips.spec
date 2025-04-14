@@ -99,7 +99,7 @@ echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 %doc
 
 %changelog
-* Mon Apr 14 2025 Rafael Gómez <rgomez@redborder.com> - 2.2.2-1
+* Mon Apr 14 2025 Rafael Gómez <rgomez@redborder.com> - 3.0.0-1
 - Add domain configuration update during package upgrade for http2k
 
 * Thu Dec 14 2023 Miguel Negrón <manegron@redborder.com> - 1.4.0-1
