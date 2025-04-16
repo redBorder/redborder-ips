@@ -49,8 +49,14 @@ install -D -m 0644 resources/systemd/rb-init-conf.service %{buildroot}/usr/lib/s
 install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redborder/lib/dhclient-enter-hooks
 
 %pre
+if [ -f /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec ]; then
+    cp -p /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec.backup
+fi
 
 %post
+if [ -f /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec ]; then
+    rm -f /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec
+fi
 case "$1" in
   1)
     # This is an initial install.
@@ -79,6 +85,11 @@ systemctl enable pf_ring && systemctl start pf_ring
 echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 /sbin/sysctl --system > /dev/null 2>&1
 
+%postun
+if [ -f /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec.backup ]; then
+    mv /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec.backup /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec
+fi
+
 %files
 %defattr(0755,root,root)
 /usr/lib/redborder/bin
@@ -99,9 +110,10 @@ echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 %doc
 
 %changelog
-* Mon Apr 14 2025 Rafael Gómez <rgomez@redborder.com> - 3.0.0-1
+* Fri Mar 28 2025 Vicente Mesa, José Navarro <vimesa@redborder.com, jnavarro@redborder.com> - 
+- Chef update handling conflict with openssl
+* Mon Apr 14 2025 Rafael Gómez <rgomez@redborder.com>
 - Add domain configuration update during package upgrade for http2k
-
 * Thu Dec 14 2023 Miguel Negrón <manegron@redborder.com> - 1.4.0-1
 - Set version for daq to 2.0.7
 
