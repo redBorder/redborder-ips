@@ -89,7 +89,7 @@ fi
 %doc
 
 %changelog
-* Fri Mar 28 2025 Vicente Mesa, José Navarro <vimesa@redborder.com, jnavarro@redborder.com> - 3.0.0-1
+* Fri Mar 28 2025 Vicente Mesa, José Navarro <vimesa@redborder.com, jnavarro@redborder.com> - 
 - Chef update handling conflict with openssl
 
 * Thu Dec 14 2023 Miguel Negrón <manegron@redborder.com> - 1.4.0-1
