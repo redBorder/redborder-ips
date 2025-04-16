@@ -57,6 +57,27 @@ fi
 if [ -f /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec ]; then
     rm -f /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec
 fi
+case "$1" in
+  1)
+    # This is an initial install.
+    :
+  ;;
+  2)
+    # This is an upgrade.
+    CDOMAIN_FILE="/etc/redborder/cdomain"
+
+    if [ -f "$CDOMAIN_FILE" ]; then
+      SUFFIX=$(cat "$CDOMAIN_FILE")
+    else
+      SUFFIX="redborder.cluster"
+    fi
+
+    NEW_DOMAIN="http2k.${SUFFIX}"
+
+    sed -i -E "s/\bhttp2k\.service\b/${NEW_DOMAIN}/" /etc/hosts
+  ;;
+esac
+
 [ -f /usr/lib/redborder/bin/rb_rubywrapper.sh ] && /usr/lib/redborder/bin/rb_rubywrapper.sh -c
 systemctl daemon-reload
 systemctl enable pf_ring && systemctl start pf_ring
@@ -91,7 +112,8 @@ fi
 %changelog
 * Fri Mar 28 2025 Vicente Mesa, José Navarro <vimesa@redborder.com, jnavarro@redborder.com> - 
 - Chef update handling conflict with openssl
-
+* Mon Apr 14 2025 Rafael Gómez <rgomez@redborder.com>
+- Add domain configuration update during package upgrade for http2k
 * Thu Dec 14 2023 Miguel Negrón <manegron@redborder.com> - 1.4.0-1
 - Set version for daq to 2.0.7
 
