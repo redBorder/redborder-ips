@@ -72,9 +72,11 @@ case "$1" in
       SUFFIX="redborder.cluster"
     fi
 
-    NEW_DOMAIN="http2k.${SUFFIX}"
+    NEW_DOMAIN_HTTP2K="http2k.${SUFFIX}"
+    NEW_DOMAIN_ERCHEF="erchef.service.${SUFFIX}"
 
-    sed -i -E "s/\bhttp2k\.service\b/${NEW_DOMAIN}/" /etc/hosts
+    sed -i -E "s/\bhttp2k\.service\b/${NEW_DOMAIN_HTTP2K}/" /etc/hosts
+    sed -i -E "s/\berchef\.service\b/${NEW_DOMAIN_ERCHEF}/" /etc/hosts
   ;;
 esac
 
@@ -110,7 +112,7 @@ fi
 %doc
 
 %changelog
-* Fri Mar 28 2025 Vicente Mesa, José Navarro <vimesa@redborder.com, jnavarro@redborder.com> - 
+* Fri Mar 28 2025 Vicente Mesa, José Navarro <vimesa@redborder.com, jnavarro@redborder.com> -
 - Chef update handling conflict with openssl
 * Mon Apr 14 2025 Rafael Gómez <rgomez@redborder.com>
 - Add domain configuration update during package upgrade for http2k
