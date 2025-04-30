@@ -226,8 +226,8 @@ management_iface = nil
 if general_conf["network"]["interfaces"].size > 0
     interface_options = general_conf["network"]["interfaces"].map { |i| [i["device"]] }
     text = <<EOF
-You  multiple network interfaces configured.
-Pleaelect one to be used as the management interface.
+You have multiple network interfaces configured.
+Please select one to be used as the management interface.
 EOF
     dialog = MRDialog.new
     dialog.clear = true
@@ -395,8 +395,13 @@ unless general_conf["network"]["interfaces"].empty?
     end
 end
 
+unless general_conf["network"]["management_interface"].nil?
+    text += "- Management Interface:\n"
+    text += "    #{general_conf["network"]["management_interface"]}\n"
+end
+
 unless general_conf["network"]["dns"].nil? or general_conf["network"]["dns"].empty?
-    text += "- DNS:\n"
+    text += "\n- DNS:\n"
     general_conf["network"]["dns"].each do |dns|
         text += "    #{dns}\n"
     end
