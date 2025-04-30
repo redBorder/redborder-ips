@@ -60,7 +60,7 @@ module Config_utils
     end
 
     # Replace chef server urls
-    def self.replace_chef_server_url
+    def self.replace_chef_server_url(cdomain)
       chef_paths = [
         '/etc/chef/client.rb.default',
         '/etc/chef/client.rb',
@@ -73,8 +73,7 @@ module Config_utils
         if File.file?(file_path)
           file_content = File.read(file_path)
 
-          file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url          "https://erchef.service/organizations/redborder"')
-          file_content.gsub!(/^chef_server_url\s+'.*'/, "chef_server_url          'https://erchef.service/organizations/redborder'")
+          file_content.gsub!(/^chef_server_url\s+["].*["]/, "chef_server_url          \"https://erchef.service.#{cdomain}/organizations/redborder\"")
 
           File.write(file_path, file_content)
         end
