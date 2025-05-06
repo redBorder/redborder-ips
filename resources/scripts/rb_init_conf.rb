@@ -347,7 +347,7 @@ if opt["r"]
     system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host}")
     if $?.exitstatus == 0
       Config_utils.hook_hosts(webui_host, cdomain)
-      Config_utils.replace_chef_server_url
+      Config_utils.replace_chef_server_url(cdomain)
       Config_utils.ensure_log_file_exists
       system("sed -i '/webui_pass/d' #{INITCONF}")
       puts "Sensor registered to the manager, please wait..."

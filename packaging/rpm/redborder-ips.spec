@@ -69,9 +69,11 @@ case "$1" in
       SUFFIX="redborder.cluster"
     fi
 
-    NEW_DOMAIN="http2k.${SUFFIX}"
+    NEW_DOMAIN_HTTP2K="http2k.${SUFFIX}"
+    NEW_DOMAIN_ERCHEF="erchef.service.${SUFFIX}"
 
-    sed -i -E "s/\bhttp2k\.service\b/${NEW_DOMAIN}/" /etc/hosts
+    sed -i -E "s/\bhttp2k\.service\b/${NEW_DOMAIN_HTTP2K}/" /etc/hosts
+    sed -i -E "s/\berchef\.service\b/${NEW_DOMAIN_ERCHEF}/" /etc/hosts
   ;;
 esac
 
