@@ -76,6 +76,8 @@ case "$1" in
     sed -i -E "s/\bhttp2k\.service\b/${NEW_DOMAIN_HTTP2K}/" /etc/hosts
     sed -i -E "s/\berchef\.service\b/${NEW_DOMAIN_ERCHEF}/" /etc/hosts
     sed -i -E "s/\bs3\.service\b/${NEW_DOMAIN_S3}/" /etc/hosts
+    sed -i "s|https://erchef\.service/|https://erchef.service.${cdomain}/|" /etc/chef/client.rb
+
   ;;
 esac
 
