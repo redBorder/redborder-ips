@@ -55,12 +55,12 @@ module Config_utils
       hosts_content = File.read('/etc/hosts')
       hosts_content.gsub!(/^.*\bdata\.redborder\.cluster\b.*$/, '')
       hosts_content.gsub!(/^.*\brbookshelf\.s3\.redborder\.cluster\b.*$/, '')
-      hosts_content << "#{domain} data.#{cdomain} kafka.service kafka.#{cdomain} erchef.#{cdomain} rbookshelf.s3.#{cdomain} #{cdomain} s3.service erchef.service http2k.#{cdomain} webui.service\n"
+      hosts_content << "#{domain} data.#{cdomain} kafka.service kafka.#{cdomain} erchef.#{cdomain} erchef.service.#{cdomain} rbookshelf.s3.#{cdomain} #{cdomain} s3.service.#{cdomain} http2k.#{cdomain} webui.service\n"
       File.write('/etc/hosts', hosts_content)
     end
 
     # Replace chef server urls
-    def self.replace_chef_server_url
+    def self.replace_chef_server_url(cdomain)
       chef_paths = [
         '/etc/chef/client.rb.default',
         '/etc/chef/client.rb',
@@ -73,8 +73,7 @@ module Config_utils
         if File.file?(file_path)
           file_content = File.read(file_path)
 
-          file_content.gsub!(/^chef_server_url\s+".*"/, 'chef_server_url          "https://erchef.service/organizations/redborder"')
-          file_content.gsub!(/^chef_server_url\s+'.*'/, "chef_server_url          'https://erchef.service/organizations/redborder'")
+          file_content.gsub!(/^chef_server_url\s+['"].*['"]/, "chef_server_url          \"https://erchef.service.#{cdomain}/organizations/redborder\"")
 
           File.write(file_path, file_content)
         end
