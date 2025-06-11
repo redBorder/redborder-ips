@@ -54,6 +54,7 @@ install -D -m 0755 resources/lib/dhclient-enter-hooks %{buildroot}/usr/lib/redbo
 if ls /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.* 1> /dev/null 2>&1; then
   rm -f /opt/chef-workstation/embedded/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.*
 fi
+MARKER_FILE="/var/lib/redborder/upgrade_etc_hosts_patch_done"
 case "$1" in
   1)
     # This is an initial install.
@@ -61,8 +62,12 @@ case "$1" in
   ;;
   2)
     # This is an upgrade.
-    CDOMAIN_FILE="/etc/redborder/cdomain"
+    if [ -f "$MARKER_FILE" ]; then
+      echo "Post-install patch already applied, skipping."
+      exit 0
+    fi
 
+    CDOMAIN_FILE="/etc/redborder/cdomain"
     if [ -f "$CDOMAIN_FILE" ]; then
       SUFFIX=$(cat "$CDOMAIN_FILE")
     else
@@ -73,11 +78,35 @@ case "$1" in
     NEW_DOMAIN_ERCHEF="erchef.service.${SUFFIX}"
     NEW_DOMAIN_S3="s3.service.${SUFFIX}"
 
+    # Safely replace only if not already changed
+    grep -qE '\bhttp2k\.service[[:space:]]' /etc/hosts && \
     sed -i -E "s/\bhttp2k\.service\b/${NEW_DOMAIN_HTTP2K}/" /etc/hosts
-    sed -i -E "s/\berchef\.service\b/${NEW_DOMAIN_ERCHEF}/" /etc/hosts
-    sed -i -E "s/\bs3\.service\b/${NEW_DOMAIN_S3}/" /etc/hosts
-    sed -i "s|https://erchef\.service/|https://erchef.service.${cdomain}/|" /etc/chef/client.rb
 
+    grep -qE '\berchef\.service[[:space:]]' /etc/hosts && \
+    sed -i -E "s/\berchef\.service\b/${NEW_DOMAIN_ERCHEF}/" /etc/hosts
+
+    grep -qE '\bs3\.service[[:space:]]' /etc/hosts && \
+    sed -i -E "s/\bs3\.service\b/${NEW_DOMAIN_S3}/" /etc/hosts
+
+    CHEF_FILES=(
+      "/etc/chef/client.rb.default"
+      "/etc/chef/client.rb"
+      "/etc/chef/knife.rb.default"
+      "/etc/chef/knife.rb"
+      "/root/.chef/knife.rb"
+    )
+
+    for f in "${CHEF_FILES[@]}"; do
+      if [ -f "$f" ]; then
+        if grep -q 'https://erchef\.service/' "$f"; then
+          sed -i "s|https://erchef\.service/|https://${NEW_DOMAIN_ERCHEF}/|" "$f"
+          echo "Updated: $f"
+        fi
+      fi
+    done
+
+    mkdir -p "/var/lib/redborder"
+    touch "$MARKER_FILE"
   ;;
 esac
 
