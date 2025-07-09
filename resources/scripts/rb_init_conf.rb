@@ -343,9 +343,12 @@ if opt["r"]
       exit 1
     end
   else
-    error_log_file = "/var/log/rb-register-common/register-error.log"
-    system("sudo hostnamectl set-hostname #{ips_node_name}")
+    FileUtils.mkdir_p("/var/log/rb-register-common")
+    log_file_error = "/var/log/rb-register-common/register-error.log"
+    log_file = "/var/log/rb-register-common/register.log"
     command = "/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host}"
+
+    system("sudo hostnamectl set-hostname #{ips_node_name}")
     full_output = %x{#{command} 2>&1}
     if $?.exitstatus == 0
       Config_utils.hook_hosts(webui_host, cdomain)
@@ -353,13 +356,13 @@ if opt["r"]
       Config_utils.ensure_log_file_exists
       system("sed -i '/webui_pass/d' #{INITCONF}")
       puts "Sensor registered to the manager, please wait..."
-      puts "You can see logs in /var/log/rb-register-common/register.log"
-      system('/usr/lib/redborder/bin/rb_register_finish.sh > /var/log/rb-register-common/register.log 2>&1')
+      puts "You can see logs in #{log_file}"
+      system("/usr/lib/redborder/bin/rb_register_finish.sh > #{log_file} 2>&1")
       puts "Registration and configuration finished!"
     else
       puts "Error: Sensor association failed with exit status #{$?.exitstatus}."
-      puts "Error written to: #{error_log_file}"
-      File.write(error_log_file, full_output)
+      puts "Error written to: #{log_file_error}"
+      File.write(log_file_error, full_output)
     end
   end
 end
