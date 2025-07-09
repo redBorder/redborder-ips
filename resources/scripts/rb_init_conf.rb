@@ -345,22 +345,22 @@ if opt["r"]
   else
     system("sudo hostnamectl set-hostname #{ips_node_name}")
     Config_utils.ensure_log_file_exists
-    system("echo 'Sensor #{ips_node_name} association in progress...' >> #{ConfigUtils.log_file}")
-    system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host} >> #{ConfigUtils.log_file} 2>&1")
+    system("echo 'Sensor #{ips_node_name} association in progress...' > #{Config_utils.log_file}")
+    system("/usr/lib/redborder/scripts/rb_associate_sensor.rb -u #{webui_user} -p #{webui_pass} -i #{Config_utils.get_ip_address} -m #{webui_host} >> #{Config_utils.log_file} 2>&1")
     if $?.exitstatus == 0
       Config_utils.hook_hosts(webui_host, cdomain)
       Config_utils.replace_chef_server_url(cdomain)
       
       system("sed -i '/webui_pass/d' #{INITCONF}")
       puts "Sensor registered to the manager, please wait..."
-      puts "You can see logs in #{ConfigUtils.log_file}"
-      system("/usr/lib/redborder/bin/rb_register_finish.sh >> #{ConfigUtils.log_file} 2>&1")
+      puts "You can see logs in #{Config_utils.log_file}"
+      system("/usr/lib/redborder/bin/rb_register_finish.sh >> #{Config_utils.log_file} 2>&1")
       puts "Registration and configuration finished!"
     else
       
       puts "Error: Sensor association failed with exit status #{$?.exitstatus}."
       puts "Please review #{INITCONF} file or network configuration..."
-      puts "See \"#{ConfigUtils.log_file}\" for more details."
+      puts "See \"#{Config_utils.log_file}\" for more details."
     end
   end
 end
