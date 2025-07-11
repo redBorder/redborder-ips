@@ -648,7 +648,18 @@ if Dir.exist?@v_group_dir and File.exists?"#{@v_group_dir}/cpu_list"
     if binding_id.nil? or binding_id<0
       print "Error: binding id not found or it is not valid\n"
     elsif dbversion_ids.nil? or dbversion_ids.empty?
-      print "Error: dbversion id not found or it is not valid\n"
+      print "No rule DB versions specified for binding #{binding_id}. Cleaning up rules...\n"
+
+      # Paths base
+      bind_path = "/etc/snort/#{@group_id}/snort-binding-#{binding_id}"
+      FileUtils.mkdir_p bind_path
+
+      # Clear rule files (empty them)
+      File.write("#{bind_path}/snort.rules", "")
+      File.write("#{bind_path}/preprocessor.rules", "")
+      File.write("#{bind_path}/threshold.conf", "# Empty threshold.conf")
+      File.write("#{bind_path}/dynamicrules/.keep", "") unless Dir.exist?("#{bind_path}/dynamicrules")
+      File.write("/etc/snort/#{@group_id}/sid-msg.map", "")
     else
       system("source /etc/snort/#{@group_id}/snort-binding-#{binding_id}/snort-bindings.conf; echo \"Binding: $BINDING_NAME\"")
       @v_rulefilename         = "snort.rules"
