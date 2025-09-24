@@ -15,8 +15,8 @@ require 'fileutils'
 
 module Config_utils
 
-    LOG_DIRECTORY = '/var/log/rb-register-common'
-    LOG_FILE_NAME = 'register.log'
+    LOG_DIRECTORY = '/var/log/rb-register'
+    LOG_FILE_NAME = 'finish.log'
 
     @modelist_path="/usr/lib/redborder/mode-list.yml"
 
