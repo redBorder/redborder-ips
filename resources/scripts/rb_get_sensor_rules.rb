@@ -199,7 +199,7 @@ elsif !opt["b"].nil?
 end
 
 cdomain = File.read('/etc/redborder/cdomain').strip
-@weburl = "webui.#{cdomain}"
+@weburl = "webui.service.#{cdomain}"
 @client_name = File.read('/etc/chef/nodename').strip
 @client_id   = @client_name.split('-').last
 
