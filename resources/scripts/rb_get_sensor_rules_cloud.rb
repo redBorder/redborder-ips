@@ -165,7 +165,7 @@ end
 
 ret=0
 cdomain = File.read('/etc/redborder/cdomain').strip
-@weburl = "webui.service.#{cdomain}"
+@weburl = "webui.#{cdomain}"
 
 def usage
   printf "Usage: rb_get_sensor_rules_cloud.rb -u <uuid> -c <command>\n"
