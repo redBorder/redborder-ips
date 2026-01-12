@@ -62,7 +62,6 @@ response_json = JSON.parse(resp.body)
 
 # It's necessary to delete double quote from content files
 client_api_key = response_json['client_api_key'].gsub("\"", '')
-encrypted_data_bag_secret = response_json['encrypted_data_bag_secret'].gsub("\"", '')
 erchef_file_name = response_json['erchef_cert']['name']
 erchef_file_content = response_json['erchef_cert']['content'].gsub("\"", '')
 
@@ -80,13 +79,6 @@ end
 # Create /etc/chef/client.pem file
 File.open("/etc/chef/client.pem", "w+") do |f|
   client_api_key.split('\n').each do |l|
-    f.puts l
-  end
-end
-
-# Create /etc/chef/encrypted_data_bag_secret file
-File.open("/etc/chef/encrypted_data_bag_secret", "w+") do |f|
-  encrypted_data_bag_secret.split('\n').each do |l|
     f.puts l
   end
 end
