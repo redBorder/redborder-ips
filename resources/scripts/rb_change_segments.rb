@@ -16,19 +16,20 @@ opt = Getopt::Std.getopts("f")
 
 def cancel_change_segments()
 
-    dialog = MRDialog.new
-    dialog.clear = true
-    dialog.title = "Segments change wizard cancelled"
+  dialog = MRDialog.new
+  dialog.clear = true
+  dialog.title = "Segments change wizard cancelled"
 
-    text = <<EOF
+  text = 
+  <<EOF
 
-The segments change has been cancelled or stopped.
+  The segments change has been cancelled or stopped.
 
-If you want to complete the change, please execute it again.
+  If you want to complete the change, please execute it again.
 
-EOF
-    result = dialog.msgbox(text, 11, 41)
-    exit(1)
+  EOF
+  result = dialog.msgbox(text, 11, 41)
+  exit(1)
 
 end
 
@@ -42,19 +43,17 @@ def local_tty_warning_wizard
   dialog.clear = true
   dialog.title = "SETUP wizard cancelled"
 
-  text = <<EOF
+  text = 
+  <<EOF
 
-This device must be configured under local tty.
+  This device must be configured under local tty.
 
-If you want to complete the setup wizard, please execute it again in a local tty.
+  If you want to complete the setup wizard, please execute it again in a local tty.
 
-EOF
+  EOF
   result = dialog.msgbox(text, 11, 41)
   exit(1)
 end
-
-# Run the wizard only in local tty
-local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
 
 # Load configuration from a YAML file.
 #
@@ -95,12 +94,6 @@ def show_current_segments_config_dialog(config)
   dialog.msgbox(text, 15, 50)
 end
 
-# Load the current configuration from the config file
-init_conf = load_config(CONFFILE)
-
-# Display segment configuration before any action
-show_current_segments_config_dialog(init_conf)
-
 # Display a warning dialog to the user about deleting all network segment configurations.
 #
 # This function uses `MRDialog` to create a dialog window. If the user selects 'No', the program exits.
@@ -123,18 +116,6 @@ def delete_existing_br_interfaces
     system("brctl delbr #{br_iface}")
   end
 end
-
-warn_user_about_segment_deletion
-delete_existing_br_interfaces
-
-init_conf = load_config(CONFFILE)
-
-segments_conf = SegmentsConf.new
-segments_conf.doit
-init_conf["segments"] = segments_conf.conf rescue nil
-init_conf["segments"] = nil if init_conf["segments"] && init_conf["segments"].empty?
-
-cancel_change_segments if segments_conf.cancel
 
 # Create or update network configuration scripts for a segment.
 #
@@ -239,6 +220,31 @@ def write_network_config_files(segment)
     logger.error("Error during segment configuration: #{e.message}")
   end
 end
+
+###
+### MAIN
+###
+
+# Run the wizard only in local tty
+local_tty_warning_wizard unless Config_utils.is_local_tty or opt["f"]
+
+# Load the current configuration from the config file
+init_conf = load_config(CONFFILE)
+
+# Display segment configuration before any action
+show_current_segments_config_dialog(init_conf)
+
+warn_user_about_segment_deletion
+delete_existing_br_interfaces
+
+init_conf = load_config(CONFFILE)
+
+segments_conf = SegmentsConf.new
+segments_conf.doit
+init_conf["segments"] = segments_conf.conf rescue nil
+init_conf["segments"] = nil if init_conf["segments"] && init_conf["segments"].empty?
+
+cancel_change_segments if segments_conf.cancel
 
 manage_network_interfaces(init_conf["segments"])
 
