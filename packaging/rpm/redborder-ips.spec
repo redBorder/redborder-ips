@@ -136,6 +136,9 @@ echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 %doc
 
 %changelog
+* Wed Aug 5 2026 Nils Verschaeve <nverschaeve@redborder.com> - 4.0.0
+- Remove redborder-cgroups
+
 * Tue Apr 22 2025 Rafael Gómez <rgomez@redborder.com> - 3.1.1-1
 - Remove openssl gemspec file handling from chef-workstation package
 
