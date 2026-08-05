@@ -13,7 +13,6 @@ Source0: %{name}-%{version}.tar.gz
 Requires: bash dialog dmidecode rsync nc telnet redborder-common redborder-chef-client redborder-rubyrvm redborder-cli rb-register bridge-utils bpctl pfring-dkms pfring net-tools bind-utils ipmitool watchdog bp_watchdog snort barnyard2 dhclient
 Requires: chef-workstation
 Requires: network-scripts network-scripts-teamd
-Requires: redborder-cgroups
 Requires: daq = 2.0.7 daq-modules = 2.0.7
 
 %description
@@ -137,6 +136,9 @@ echo "kernel.printk = 1 4 1 7" > /usr/lib/sysctl.d/99-redborder-printk.conf
 %doc
 
 %changelog
+* Wed Aug 5 2026 Nils Verschaeve <nverschaeve@redborder.com> - 4.0.0
+- Remove redborder-cgroups
+
 * Tue Apr 22 2025 Rafael Gómez <rgomez@redborder.com> - 3.1.1-1
 - Remove openssl gemspec file handling from chef-workstation package
 
