@@ -76,6 +76,7 @@ case "$1" in
     NEW_DOMAIN_HTTP2K="http2k.${SUFFIX}"
     NEW_DOMAIN_ERCHEF="erchef.service.${SUFFIX}"
     NEW_DOMAIN_S3="s3.service.${SUFFIX}"
+    NEW_DOMAIN_HUB="redborder-hub.service.${SUFFIX}"
 
     # Safely replace only if not already changed
     grep -qE '\bhttp2k\.service[[:space:]]' /etc/hosts && \
@@ -86,6 +87,9 @@ case "$1" in
 
     grep -qE '\bs3\.service[[:space:]]' /etc/hosts && \
     sed -i -E "s/\bs3\.service\b/${NEW_DOMAIN_S3}/" /etc/hosts
+
+    grep -qE '\bredborder-hub\.service[[:space:]]' /etc/hosts && \
+    sed -i -E "s/\bredborder-hub\.service\b/${NEW_DOMAIN_HUB}/" /etc/hosts
 
     CHEF_FILES=(
       "/etc/chef/client.rb.default"
