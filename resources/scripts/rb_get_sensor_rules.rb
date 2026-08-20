@@ -254,13 +254,13 @@ def get_rules(remote_name, snortrules, binding_id)
     else
       print "(not modified) "
       print_length += "(not modified) ".length
-      File.delete(snortrulestmp) if File.exist?(snortrulestmp) ""
+      File.delete(snortrulestmp) if File.exist?(snortrulestmp)
     end
     print_ok(print_length)
-    return true
+    true
   else
     print_fail(print_length)
-    return false
+    false
   end
 end
 
