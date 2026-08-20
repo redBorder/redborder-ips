@@ -246,24 +246,53 @@ def get_rules(remote_name, snortrules, binding_id)
 
   if result
     File.open(snortrulestmp, 'w') {|f| f.write(result)}
-
+    remove_incompatible_rules(snortrulestmp)
     v_md5sum_tmp  = Digest::MD5.hexdigest(File.read(snortrulestmp))
     v_md5sum      = File.exist?(snortrules) ? Digest::MD5.hexdigest(File.read(snortrules)) : ""
-
     if v_md5sum != v_md5sum_tmp
       File.zero?(@v_iplist_zone) ? @reload_snort = 1 : @restart_snort = 1
     else
       print "(not modified) "
       print_length += "(not modified) ".length
-      File.delete(snortrulestmp) if File.exist?(snortrulestmp)
+      File.delete(snortrulestmp) if File.exist?(snortrulestmp) ""
     end
-
     print_ok(print_length)
     return true
   else
     print_fail(print_length)
     return false
   end
+end
+
+# Public: Elimina del fichero de reglas aquellas que usan la opción
+# byte_math, incompatible con Snort 2.9.8.0, e informa con un warning
+# en vez de dejar que la validación de snort falle y provoque rollback.
+#
+# file_path - Ruta al fichero .tmp de reglas recién descargado.
+#
+# Returns el número de reglas eliminadas.
+def remove_incompatible_rules(file_path)
+  return 0 unless File.exist?(file_path)
+
+  removed_sids = []
+
+  filtered_lines = File.readlines(file_path).reject do |line|
+    if line =~ /\bbyte_math\s*:/
+      sid_match = /sid:\s*(\d+);/.match(line)
+      removed_sids << (sid_match ? sid_match[1] : "unknown")
+      true
+    else
+      false
+    end
+  end
+
+  unless removed_sids.empty?
+    File.open(file_path, 'w') { |f| f.write(filtered_lines.join) }
+    print "WARNING: #{removed_sids.size} rule(s) using 'byte_math' removed "
+    print "(incompatible with Snort 2.9.8.0) - SIDs: #{removed_sids.join(', ')}\n"
+  end
+
+  removed_sids.size
 end
 
 def create_sid_msg
@@ -603,9 +632,8 @@ if !File.exists?(CLIENTPEM)
   exit
 end
 
-BACKUPCOUNT             = 5
+BACKUPCOUNT = 5
 backups = []
-
 
 if Dir.exist?@v_group_dir and File.exists?"#{@v_group_dir}/cpu_list"
   datestr = Time.now.strftime("%Y%m%d%H%M%S")
