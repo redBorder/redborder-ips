@@ -381,16 +381,16 @@ module Config_utils
 
   # Function to start bpctl if the machine support it
   def self.net_init_bypass
-    return true if File.exists?("/dev/bpctl")
+    return true if File.exist?("/dev/bpctl")
 
     # trying to initialize bypass module controller
     system("/usr/bin/bpctl_start &>/dev/null")
-    return File.exists?("/dev/bpctl") # True/False depending if there is no bypass hardware
+    return File.exist?("/dev/bpctl") # True/False depending if there is no bypass hardware
   end
 
   # Functions that tells you if an interfaces has bypass support or not
   def self.net_get_device_bypass_support(interface)
-    return false unless File.exists?("/dev/bpctl")
+    return false unless File.exist?("/dev/bpctl")
 
     # There is a hardware bypass device loaded
     system("bpctl_util #{interface} is_bypass | grep -q -i \"The interface is not Bypass-SD/TAP-SD device\"")
@@ -523,7 +523,7 @@ module Config_utils
   end
 
   def self.get_pether_status(pether)
-    if File.exists?"/sys/class/net/#{pether}/operstate"
+    if File.exist?"/sys/class/net/#{pether}/operstate"
       pether_status=`cat /sys/class/net/#{pether}/operstate`.strip
     else
       pether_status="unkn"
@@ -535,7 +535,7 @@ module Config_utils
   def self.get_pether_speed(pether)
     pether_speed="unkn"
 
-    if File.exists?"/sys/class/net/#{pether}/speed"
+    if File.exist?"/sys/class/net/#{pether}/speed"
       pether_speed=`cat /sys/class/net/#{pether}/speed 2>/dev/null`.strip
     end
 
@@ -546,7 +546,7 @@ module Config_utils
   def self.get_pether_duplex(pether)
     pether_duplex="unkn"
 
-    if File.exists?"/sys/class/net/#{pether}/duplex"
+    if File.exist?"/sys/class/net/#{pether}/duplex"
       pether_duplex=`cat /sys/class/net/#{pether}/duplex 2>/dev/null`.strip
     end
     pether_duplex="unkn" if pether_duplex.nil? or pether_duplex.empty?
@@ -554,7 +554,7 @@ module Config_utils
   end
 
   def self.ipmi_capable?
-    return File.exists?"/dev/ipmi0"
+    return File.exist?"/dev/ipmi0"
   end
 
   def self.get_ipmi_properties
