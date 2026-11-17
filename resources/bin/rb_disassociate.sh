@@ -2,7 +2,7 @@
 
 FORCE=0
 RET=0
-DELETE="/etc/snort/* /etc/chef/validation.pem /etc/chef/client.pem /etc/chef/client.rb /etc/chef/role-sensor.json /etc/chef/role-sensor-once.json /etc/chef/rb-register.db /etc/sudoers.d/redBorder /etc/sysconfig/iptables /etc/chef/rb-register.db /var/log/rb-register/finish.log /etc/redborder/rb_init_conf.yml"
+DELETE="/etc/snort/* /etc/chef/validation.pem /etc/chef/client.pem /etc/chef/client.rb /etc/chef/role-sensor.json /etc/chef/role-sensor-once.json /etc/chef/rb-register.db /etc/sudoers.d/redBorder /etc/sysconfig/iptables /etc/chef/rb-register.db /var/log/rb-register/finish.log /etc/redborder/rb_init_conf.yml /etc/redborder-flow-agent/*"
 
 
 source /usr/lib/redborder/lib/rb_functions.sh
@@ -35,6 +35,7 @@ if [ "x$VAR" == "xy" -o "x$VAR" == "xY" ]; then
   
   ds_services_stop="chef-client watchdog snortd barnyard2 rb-register" #rb-register should be restarted on rb_setup_wizard
   systemctl stop $ds_services_stop
+  systemctl stop 'redborder-flow-agent@*'
 
   e_title "Deleting files"
   for n in $DELETE; do
